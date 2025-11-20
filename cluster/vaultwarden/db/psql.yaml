@@ -1,0 +1,16 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: vaultwarden-database
+  namespace: vaultwarden
+spec:
+  instances: 3
+  storage:
+    size: 10Gi
+    storageClass: longhorn
+  bootstrap:
+    initdb:
+      database: vaultwarden
+      owner: vw_user
+      secret:
+        name: vw-db-secret

@@ -4,4 +4,4 @@ kind: Kustomization
 namespace: vaultwarden
 
 resources:
-  - db
+  - db      #database directory

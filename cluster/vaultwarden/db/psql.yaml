@@ -13,4 +13,4 @@ spec:
       database: vaultwarden
       owner: vw_user
       secret:
-        name: vw-db-secret
+        name: vaultwarden-database-secret

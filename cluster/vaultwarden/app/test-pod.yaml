@@ -11,4 +11,3 @@ spec:
       image: nginx:alpine
       ports:
         - containerPort: 80
-        -hey på dei

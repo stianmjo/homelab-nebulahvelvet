@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: flux-notify-test
-  namesapce: vaultwarden
+  namespace: vaultwarden
   labels:
     app: flux-notify-test
 spec:

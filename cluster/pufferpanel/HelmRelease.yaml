@@ -21,10 +21,8 @@ spec:
             image:
               repository: pufferpanel/pufferpanel
               tag: latest
-              env:
-                PUFFER_PANEL_REGISTRATIONENABLED: "false"
-            # If you later decide to run templates that rely on Docker,
-            # you'll need host access / docker sock (see notes below).
+            env:
+              PUFFER_PANEL_REGISTRATIONENABLED: "false"
 
     service:
       main:

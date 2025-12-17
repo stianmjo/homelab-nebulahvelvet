@@ -1,0 +1,65 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: pufferpanel
+  namespace: pufferpanel
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      version: 4.5.0
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: flux-system
+  values:
+    controllers:
+      main:
+        containers:
+          main:
+            image:
+              repository: pufferpanel/pufferpanel
+              tag: latest
+            # If you later decide to run templates that rely on Docker,
+            # you'll need host access / docker sock (see notes below).
+
+    service:
+      main:
+        controller: main
+        ports:
+          http:
+            port: 8080
+          sftp:
+            port: 5657
+
+    ingress:
+      main:
+        enabled: true
+        className: nginx
+        hosts:
+          - host: panel.nebulahvelvet.no
+            paths:
+              - path: /
+                pathType: Prefix
+                service:
+                  identifier: main
+                  port: https
+        tls:
+          - hosts:
+              - panel.nebulahvelvet.no
+            secretName: pufferpanel-tls
+
+    persistence:
+      config:
+        enabled: true
+        size: 1Gi
+        accessMode: ReadWriteOnce
+        globalMounts:
+          - path: /etc/pufferpanel
+      data:
+        enabled: true
+        size: 50Gi
+        accessMode: ReadWriteOnce
+        globalMounts:
+          - path: /var/lib/pufferpanel

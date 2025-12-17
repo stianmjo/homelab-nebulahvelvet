@@ -30,9 +30,6 @@ spec:
         ports:
           http:
             port: 8080
-          sftp:
-            port: 5657
-            nodePort: 30657
 
     persistence:
       config:

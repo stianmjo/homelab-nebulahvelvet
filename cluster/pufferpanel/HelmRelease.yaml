@@ -33,23 +33,6 @@ spec:
           sftp:
             port: 5657
 
-    ingress:
-      main:
-        enabled: true
-        className: nginx
-        hosts:
-          - host: panel.nebulahvelvet.no
-            paths:
-              - path: /
-                pathType: Prefix
-                service:
-                  identifier: main
-                  port: https
-        tls:
-          - hosts:
-              - panel.nebulahvelvet.no
-            secretName: pufferpanel-tls
-
     persistence:
       config:
         enabled: true

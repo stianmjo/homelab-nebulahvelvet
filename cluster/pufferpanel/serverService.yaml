@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: pufferpanel-minecraft
+  namespace: pufferpanel
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 10.0.2.89   # <-- pick a free IP from your MetalLB pool
+  selector:
+    app.kubernetes.io/name: pufferpanel   # <-- must match labels on the pod
+  ports:
+    - name: minecraft
+      protocol: TCP
+      port: 25565        # external port (what players connect to)
+      targetPort: 25565

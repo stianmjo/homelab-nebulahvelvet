@@ -7,3 +7,4 @@ resources:
   - HelmRepository.yaml
   - ingress.yaml
   - sftp.yaml
+  - serverService.yaml

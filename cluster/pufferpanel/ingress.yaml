@@ -13,6 +13,7 @@ metadata:
     # Optional but nice for WebSockets / long-lived console connections
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-body-size: "2g"
 
 spec:
   ingressClassName: nginx

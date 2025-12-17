@@ -6,3 +6,4 @@ resources:
   - HelmRelease.yaml
   - HelmRepository.yaml
   - ingress.yaml
+  - sftp.yaml

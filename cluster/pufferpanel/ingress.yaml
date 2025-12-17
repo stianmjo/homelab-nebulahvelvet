@@ -18,11 +18,11 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - pufferpanel.nebulahvelvet.no
+        - panel.nebulahvelvet.no
       secretName: pufferpanel-tls
 
   rules:
-    - host: pufferpanel.nebulahvelvet.no
+    - host: panel.nebulahvelvet.no
       http:
         paths:
           - path: /

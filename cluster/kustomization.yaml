@@ -5,3 +5,4 @@ resources:
   - pufferpanel
   - traefik-external
   - traefik-internal
+  - cert-manager

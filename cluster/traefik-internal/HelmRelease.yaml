@@ -49,8 +49,14 @@ spec:
       websecure:
         expose:
           default: false   # don't expose 443 at all
+      
+      traefik:
+        expose:
+      default: true
+      port: 9000           # container port
+      exposedPort: 9000
 
     ingressRoute:
       dashboard:
         enabled: true
-        insecure: false
+        insecure: true

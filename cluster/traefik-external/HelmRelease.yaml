@@ -36,7 +36,10 @@ spec:
 
     ports:
       websecure:
-        port: 31000
+        expose:
+          default: true
+        port: 8443        # container port (non-privileged, default)
+        exposedPort: 443  # LoadBalancer port
 
     # Don’t expose dashboard publicly by default
     ingressRoute:

@@ -52,10 +52,10 @@ spec:
         exposedPort: 443  # LoadBalancer port
       
       traefik:
+        port: 8080
         expose:
           default: true
-        port: 9000           # container port
-        exposedPort: 9000
+        exposedPort: 8080
 
     ingressRoute:
       dashboard:

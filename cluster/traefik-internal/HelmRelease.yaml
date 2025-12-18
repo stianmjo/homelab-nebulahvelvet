@@ -51,10 +51,10 @@ spec:
           default: false   # don't expose 443 at all
       
       traefik:
+        port: 8080     # container port
         expose:
           default: true
-        port: 9000           # container port
-        exposedPort: 9000
+        exposedPort: 8080
 
     ingressRoute:
       dashboard:

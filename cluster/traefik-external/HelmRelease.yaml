@@ -54,4 +54,5 @@ spec:
     # Don’t expose dashboard publicly
     ingressRoute:
       dashboard:
-        enabled: false
+        enabled: true
+        insecure: false

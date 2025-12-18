@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefik-external-dashboard
+  namespace: traefik-external
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 10.0.2.84    # pick a free MetalLB IP, NOT 10.0.2.82
+  selector:
+    app.kubernetes.io/name: traefik
+    app.kubernetes.io/instance: traefik-external
+  ports:
+    - name: dashboard
+      port: 80                 # what you hit from LAN
+      targetPort: 9000         # Traefik dashboard port

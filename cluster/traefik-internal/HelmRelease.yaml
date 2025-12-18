@@ -10,7 +10,7 @@ spec:
       chart: traefik
       sourceRef:
         kind: HelmRepository
-        name: traefik-internal
+        name: traefik-internal      # or "traefik" if you reuse the same repo
         namespace: flux-system
       interval: 1h
   values:
@@ -20,8 +20,11 @@ spec:
     providers:
       kubernetesIngress:
         enabled: true
+        ingressClass: traefik-internal   # 👉 only handle this class
+        allowEmptyServices: true
+        allowExternalNameServices: false
       kubernetesCRD:
-        enabled: false   # keep off until you want IngressRoute/Middleware CRDs
+        enabled: false
 
     ingressClass:
       enabled: true
@@ -31,17 +34,20 @@ spec:
     service:
       type: LoadBalancer
       spec:
-        loadBalancerIP: 10.0.2.83   # <-- TEMP test IP from MetalLB pool
+        loadBalancerIP: 10.0.2.83
         externalTrafficPolicy: Local
 
     ports:
+      web:
+        expose:
+          default: false
+
       websecure:
         expose:
           default: true
-        port: 8444        # container port (non-privileged, default)
-        exposedPort: 443  # LoadBalancer port
+        port: 8444        # your chosen internal container port
+        exposedPort: 443  # still 443 on the LB
 
-    # Don’t expose dashboard publicly by default
     ingressRoute:
       dashboard:
         enabled: false

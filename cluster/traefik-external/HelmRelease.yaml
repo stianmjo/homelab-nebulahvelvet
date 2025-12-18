@@ -10,7 +10,7 @@ spec:
       chart: traefik
       sourceRef:
         kind: HelmRepository
-        name: traefik-external
+        name: traefik-external      # keep your repo name
         namespace: flux-system
       interval: 1h
   values:
@@ -20,9 +20,14 @@ spec:
     providers:
       kubernetesIngress:
         enabled: true
+        # 👉 This is the important bit: only handle this class
+        ingressClass: traefik-external
+        allowEmptyServices: true
+        allowExternalNameServices: false
       kubernetesCRD:
-        enabled: false   # keep off until you want IngressRoute/Middleware CRDs
+        enabled: false   # still off, you’re only using Ingress
 
+    # This just ensures the IngressClass object exists
     ingressClass:
       enabled: true
       isDefaultClass: false
@@ -31,17 +36,22 @@ spec:
     service:
       type: LoadBalancer
       spec:
-        loadBalancerIP: 10.0.2.82   # <-- TEMP test IP from MetalLB pool
+        loadBalancerIP: 10.0.2.82
         externalTrafficPolicy: Local
 
     ports:
+      # no HTTP on external
+      web:
+        expose:
+          default: false
+
       websecure:
         expose:
           default: true
-        port: 8443        # container port (non-privileged, default)
+        port: 8443        # container port (non-privileged)
         exposedPort: 443  # LoadBalancer port
 
-    # Don’t expose dashboard publicly by default
+    # Don’t expose dashboard publicly
     ingressRoute:
       dashboard:
         enabled: false

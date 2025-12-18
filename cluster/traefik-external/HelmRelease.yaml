@@ -2,7 +2,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: traefik-external
-  namespace: traefik-external
+  namespace: traefik
 spec:
   interval: 15m
   chart:
@@ -36,11 +36,11 @@ spec:
 
     ports:
       web:
-        expose: false
+        port: 80
+        redirectTo:
+          port: websecure
       websecure:
         port: 443
-        exposedPort: 443
-        expose: true
 
     # Don’t expose dashboard publicly by default
     ingressRoute:

@@ -5,25 +5,25 @@ metadata:
   namespace: pufferpanel
   annotations:
     # cert-manager: use your existing ClusterIssuer
-    cert-manager.io/cluster-issuer: internal-ca
+    cert-manager.io/cluster-issuer:  letsencrypt-domeneshop
 
     # Force HTTPS
-#    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
 
     # Optional but nice for WebSockets / long-lived console connections
-#    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
-#    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
-#    nginx.ingress.kubernetes.io/proxy-body-size: "2g"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-body-size: "2g"
 
 spec:
   ingressClassName: traefik-internal
   tls:
     - hosts:
-        - panel.local.net
-      secretName: wildcard-local-net-tls
+        - panel.nebulahvelvet.no
+      secretName: pufferpanel-tls
 
   rules:
-    - host: panel.local.net
+    - host: panel.nebulahvelvet.no
       http:
         paths:
           - path: /

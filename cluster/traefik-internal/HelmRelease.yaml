@@ -17,14 +17,30 @@ spec:
     deployment:
       replicas: 2
 
+    ingressClass:
+      enabled: true
+      isDefaultClass: false
+      name: traefik-internal
+
+    service:
+      type: LoadBalancer
+      spec:
+        loadBalancerIP: 10.0.2.83
+        externalTrafficPolicy: Local
+  values:
+    deployment:
+      replicas: 2
+
     providers:
       kubernetesIngress:
         enabled: true
-        ingressClass: traefik-internal   # 👉 only handle this class
+        ingressClass: traefik-internal
         allowEmptyServices: true
         allowExternalNameServices: false
+
+      # IMPORTANT: must be ON for the dashboard IngressRoute
       kubernetesCRD:
-        enabled: false
+        enabled: true
 
     ingressClass:
       enabled: true
@@ -41,25 +57,29 @@ spec:
       dashboard: true
 
     ports:
-      # INTERNAL HTTP (80) – enabled
+      # INTERNAL HTTP (80)
       web:
         expose:
-          default: true    # expose this entrypoint
-        port: 8000         # container port (default)
-        exposedPort: 80    # MetalLB / node port 80
+          default: true
+        port: 8000       # container port
+        exposedPort: 80  # MetalLB / node port 80
 
-      # INTERNAL HTTPS – disabled
+      # No HTTPS internally (for now)
       websecure:
         expose:
-          default: false   # don't expose 443 at all
-      
+          default: false
+
+      # Do NOT expose the traefik port; dashboard goes via IngressRoute on 'web'
       traefik:
-        port: 8080     # container port
+        port: 8080
         expose:
-          default: true
-        exposedPort: 8080
+          default: false
 
     ingressRoute:
       dashboard:
         enabled: true
-        insecure: true
+        # Hostname you want to use on LAN
+        matchRule: Host(`traefik-internal.local.net`)
+        entryPoints:
+          - web
+        # (no TLS here -> plain http)

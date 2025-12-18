@@ -38,15 +38,17 @@ spec:
         externalTrafficPolicy: Local
 
     ports:
+      # INTERNAL HTTP (80) – enabled
       web:
         expose:
-          default: false
+          default: true    # expose this entrypoint
+        port: 8000         # container port (default)
+        exposedPort: 80    # MetalLB / node port 80
 
+      # INTERNAL HTTPS – disabled
       websecure:
         expose:
-          default: true
-        port: 8444        # your chosen internal container port
-        exposedPort: 443  # still 443 on the LB
+          default: false   # don't expose 443 at all
 
     ingressRoute:
       dashboard:

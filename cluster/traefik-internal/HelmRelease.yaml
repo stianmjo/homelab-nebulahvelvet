@@ -37,6 +37,9 @@ spec:
         loadBalancerIP: 10.0.2.83
         externalTrafficPolicy: Local
 
+    api:
+      dashboard: true
+
     ports:
       # INTERNAL HTTP (80) – enabled
       web:

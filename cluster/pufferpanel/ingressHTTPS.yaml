@@ -16,7 +16,7 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-body-size: "2g"
 
 spec:
-  ingressClassName: traefik-internal
+  ingressClassName: nginx
   tls:
     - hosts:
         - panel.nebulahvelvet.no

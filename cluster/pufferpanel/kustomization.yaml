@@ -5,6 +5,7 @@ resources:
   - namespace.yaml
   - HelmRelease.yaml
   - HelmRepository.yaml
-  - ingress.yaml
+  - ingressHTTPS.yaml
+  - ingressHTTP.yaml
   - sftp.yaml
   - serverService.yaml

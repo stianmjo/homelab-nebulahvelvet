@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pufferpanel
+  namespace: pufferpanel
+  annotations:
+
+spec:
+  ingressClassName: traefik-internal
+  rules:
+    - host: panel.local.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pufferpanel      # <- Service name from the Helm chart
+                port:
+                  number: 8080

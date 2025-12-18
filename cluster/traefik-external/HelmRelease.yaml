@@ -50,14 +50,7 @@ spec:
           default: true
         port: 8443        # container port (non-privileged)
         exposedPort: 443  # LoadBalancer port
-      
-      traefik:
-        port: 8080
-        expose:
-          default: true
-        exposedPort: 8080
 
     ingressRoute:
       dashboard:
-        enabled: true
-        insecure: true
+        enabled: false

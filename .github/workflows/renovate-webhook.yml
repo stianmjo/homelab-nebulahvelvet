@@ -1,19 +1,14 @@
 name: Notify Discord on Renovate PRs
 
 on:
-  # Normal behavior: run when PRs change
   pull_request:
     types: [opened, reopened, ready_for_review]
-
-  # Extra: allow manual runs from the Actions tab
   workflow_dispatch:
 
 jobs:
+  # Real notifications for Renovate PRs
   notify-discord:
     runs-on: ubuntu-latest
-
-    # Only send real notifications for Renovate PRs
-    # When run manually, github.event_name == 'workflow_dispatch', so this condition is false
     if: github.event_name == 'pull_request' && github.actor == 'renovate[bot]'
 
     steps:
@@ -49,6 +44,45 @@ jobs:
                 ],
                 "footer": {
                   "text": "Renovate Bot • GitOps"
+                }
+              }
+            ]
+          }
+          EOF
+          )
+
+          curl -X POST \
+               -H "Content-Type: application/json" \
+               -d "$payload" \
+               "$DISCORD_WEBHOOK_URL"
+
+  # Manual test job – runs only when you click "Run workflow"
+  test-discord:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Send TEST embed to Discord
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          REPO: ${{ github.repository }}
+        run: |
+          payload=$(cat <<EOF
+          {
+            "embeds": [
+              {
+                "title": "🧪 TEST: Renovate Discord webhook",
+                "description": "Manual test run from GitHub Actions for \`${REPO}\`",
+                "color": 16753920,
+                "fields": [
+                  {
+                    "name": "Triggered by",
+                    "value": "<@${{ github.actor }}>",
+                    "inline": true
+                  }
+                ],
+                "footer": {
+                  "text": "Manual webhook test"
                 }
               }
             ]

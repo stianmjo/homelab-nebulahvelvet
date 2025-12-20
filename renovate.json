@@ -2,18 +2,17 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "config:recommended",
-    ":dependencyDashboard",
     ":timezone(Europe/Oslo)"
   ],
-  "enabledManagers": ["flux"],
+
+  "dependencyDashboard": false,
+
+  "enabledManagers": ["flux", "kubernetes"],
+
   "flux": {
-    "enabled": true,
-    "managerFilePatterns": ["/cluster/.+\\.ya?ml$/"]
+    "fileMatch": ["^cluster/.+\\.ya?ml$"]
   },
-  "packageRules": [
-    {
-      "matchManagers": ["flux"],
-      "groupName": "Flux updates"
-    }
-  ]
+  "kubernetes": {
+    "fileMatch": ["^cluster/.+\\.ya?ml$"]
+  }
 }

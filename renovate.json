@@ -1,15 +1,24 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+
   "extends": [
     "config:recommended",
     ":dependencyDashboard",
     ":timezone(Europe/Oslo)"
   ],
 
+  // Be explicit: only run the Flux manager
+  "enabledManagers": ["flux"],
+
   "flux": {
-    "enabled": true,
-    "managerFilePatterns": [
-      "cluster/.+\\.ya?ml$"
-    ]
-  }
+    // Tell Flux manager to treat *all* YAML in cluster/ as Flux manifests
+    "managerFilePatterns": ["/cluster/.+\\.ya?ml$/"]
+  },
+
+  "packageRules": [
+    {
+      "matchManagers": ["flux"],
+      "groupName": "Flux updates"
+    }
+  ]
 }

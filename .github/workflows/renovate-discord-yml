@@ -6,25 +6,40 @@ on:
 
 jobs:
   notify-discord:
-    # Only run if the PR was opened by Renovate
+    # Only when the PR is from Renovate
     if: github.actor == 'renovate[bot]'
     runs-on: ubuntu-latest
 
     steps:
-      - name: Send message to Discord
+      - name: Send embed to Discord
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
+          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
         run: |
           payload=$(cat <<EOF
           {
-            "content": "📦 **Renovate** opened a PR in \`${REPO}\`:\n> ${PR_TITLE}\n${PR_URL}"
-          }
-          EOF
-          )
-          curl -X POST \
-               -H "Content-Type: application/json" \
-               -d "$payload" \
-               "$DISCORD_WEBHOOK_URL"
+            "embeds": [
+              {
+                "title": "📦 Renovate opened PR #${PR_NUMBER}",
+                "url": "${PR_URL}",
+                "description": "**${PR_TITLE}**",
+                "color": 5793266,
+                "fields": [
+                  {
+                    "name": "Repository",
+                    "value": "\`${REPO}\`",
+                    "inline": true
+                  },
+                  {
+                    "name": "Branch",
+                    "value": "\`${HEAD_BRANCH}\` ⟶ \`${BASE_BRANCH}\`",
+                    "inline": true
+                  }
+                ],
+                "footer": {
+                  "text": "Renovate Bot • Gi

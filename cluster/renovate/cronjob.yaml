@@ -43,4 +43,4 @@ spec:
                 - name: RENOVATE_TIMEZONE
                   value: Europe/Oslo
                 - name: LOG_LEVEL
-                  value: info
+                  value: debug

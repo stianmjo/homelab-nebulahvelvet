@@ -1,12 +1,13 @@
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
-  name: bouncer
+  name: crowdsec-bouncer
   namespace: traefik-external
 spec:
   plugin:
-    bouncer:
+    crowdsec-bouncer-traefik-plugin:
       enabled: true
+
       crowdsecMode: stream
       crowdsecLapiScheme: http
       crowdsecLapiHost: "crowdsec-service.crowdsec.svc.cluster.local:8080"

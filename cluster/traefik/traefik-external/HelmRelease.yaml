@@ -1,8 +1,8 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: traefik-internal
-  namespace: traefik-internal
+  name: traefik-external
+  namespace: traefik-external
 spec:
   interval: 15m
   chart:
@@ -11,9 +11,10 @@ spec:
       version: "38.0.1"
       sourceRef:
         kind: HelmRepository
-        name: traefik-internal      # or "traefik" if you reuse the same repo
+        name: traefik
         namespace: flux-system
       interval: 1h
+  
   values:
     deployment:
       replicas: 2
@@ -21,42 +22,44 @@ spec:
     providers:
       kubernetesIngress:
         enabled: true
-        ingressClass: traefik-internal
+        ingressClass: traefik-external
         allowEmptyServices: true
         allowExternalNameServices: false
 
-      # IMPORTANT: must be ON for the dashboard IngressRoute
+      # IMPORTANT: must be ON for dashboard IngressRoute
       kubernetesCRD:
         enabled: true
 
     ingressClass:
       enabled: true
       isDefaultClass: false
-      name: traefik-internal
+      name: traefik-external
 
     service:
       type: LoadBalancer
       spec:
-        loadBalancerIP: 10.0.2.83
+        loadBalancerIP: 10.0.2.82
         externalTrafficPolicy: Local
 
     api:
       dashboard: true
 
     ports:
-      # INTERNAL HTTP (80)
+      # Enable HTTP on 80 (LAN-only, since you won't port-forward it)
       web:
         expose:
           default: true
-        port: 8000       # container port
-        exposedPort: 80  # MetalLB / node port 80
+        port: 8000        # container port
+        exposedPort: 80   # MetalLB / node port 80
 
-      # No HTTPS internally (for now)
+      # Public HTTPS on 443 (what you forward from WAN)
       websecure:
         expose:
-          default: false
+          default: true
+        port: 8443
+        exposedPort: 443
 
-      # Do NOT expose the traefik port; dashboard goes via IngressRoute on 'web'
+      # Do NOT expose the raw traefik port; dashboard goes via IngressRoute on 'web'
       traefik:
         port: 8080
         expose:
@@ -65,8 +68,8 @@ spec:
     ingressRoute:
       dashboard:
         enabled: true
-        # Hostname you want to use on LAN
-        matchRule: Host(`traefik-internal.local.net`)
+        # Hostname you want to use for the external controller dashboard (LAN only)
+        matchRule: Host(`traefik-external.local.net`)
         entryPoints:
-          - web
-        # (no TLS here -> plain http)
+          - web          # plain HTTP on port 80
+        # no TLS here; it's just http:// on LAN

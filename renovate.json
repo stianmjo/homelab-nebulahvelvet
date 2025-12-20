@@ -6,19 +6,10 @@
     ":timezone(Europe/Oslo)"
   ],
 
-  "enabledManagers": ["flux"],
-
   "flux": {
-    // Tell the Flux manager to scan ALL .yaml/.yml files
+    "enabled": true,
     "managerFilePatterns": [
-      "/\\.ya?ml$/"
+      "cluster/.+\\.ya?ml$"
     ]
-  },
-
-  "packageRules": [
-    {
-      "matchManagers": ["flux"],
-      "groupName": "Flux updates"
-    }
-  ]
+  }
 }

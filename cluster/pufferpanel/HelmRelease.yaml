@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: app-template
-      version: 4.5.0
+      version: "4.5.0"
       sourceRef:
         kind: HelmRepository
         name: bjw-s
@@ -20,7 +20,7 @@ spec:
           main:
             image:
               repository: pufferpanel/pufferpanel
-              tag: latest
+              tag: "2.7.0"
             env:
               PUFFER_PANEL_REGISTRATIONENABLED: "false"
 

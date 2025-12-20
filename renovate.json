@@ -9,7 +9,10 @@
   "enabledManagers": ["flux"],
 
   "flux": {
-    "fileMatch": ["(^|/).*\\.ya?ml$"]
+    // Tell the Flux manager to scan ALL .yaml/.yml files
+    "managerFilePatterns": [
+      "/\\.ya?ml$/"
+    ]
   },
 
   "packageRules": [

@@ -10,7 +10,8 @@
   "enabledManagers": ["flux"],
 
   "flux": {
-    "fileMatch": ["(^|/).*\\.ya?ml$"]
+    "fileMatch": ["(?i).*helmrelease\\.ya?ml$"]
+
   },
 
   "packageRules": [

@@ -6,35 +6,17 @@
     ":semanticCommits",
     ":timezone(Europe/Oslo)"
   ],
-  "onboarding": false,
-  "requireConfig": "ignored",
-  "platform": "github",
-  "autodiscover": false,
-  "repositories": [
-    "YOUR_GH_ORG_OR_USER/YOUR_REPO"
-  ],
-  "enabledManagers": [
-    "flux",
-    "helm-values",
-    "kubernetes",
-    "regex"
-  ],
+
+  "enabledManagers": ["flux"],
+
   "flux": {
-    "fileMatch": [
-      "(^|/).*helmrelease\\.ya?ml$",
-      "(^|/).*helmrepository\\.ya?ml$",
-      "(^|/).*kustomization\\.ya?ml$"
-    ]
+    "fileMatch": ["(^|/).*\\.ya?ml$"]
   },
+
   "packageRules": [
     {
       "matchManagers": ["flux"],
       "groupName": "Flux HelmRelease updates"
-    },
-    {
-      "matchDatasources": ["helm", "docker"],
-      "prCreation": "not-pending",
-      "stabilityDays": 2
     }
   ]
 }

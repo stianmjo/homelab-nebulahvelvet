@@ -14,9 +14,10 @@ spec:
       template:
         spec:
           restartPolicy: Never
+          
           containers:
             - name: renovate
-              image: ghcr.io/renovatebot/renovate:42.57.1  # pin version; don't use :latest
+              image: ghcr.io/renovatebot/renovate:42.57.1
               args:
                 - "stianmjo/homelab-nebulahvelvet"
               env:
@@ -26,24 +27,20 @@ spec:
                       name: renovate-env
                       key: RENOVATE_TOKEN
 
-                # Good defaults
                 - name: RENOVATE_PLATFORM
                   value: github
                 - name: RENOVATE_ENDPOINT
                   value: https://api.github.com/
+
+                # Global-only settings belong here:
+                - name: RENOVATE_AUTODISCOVER
+                  value: "false"
+                - name: RENOVATE_ONBOARDING
+                  value: "false"
+                - name: RENOVATE_REQUIRE_CONFIG
+                  value: "ignored"
+
                 - name: RENOVATE_TIMEZONE
                   value: Europe/Oslo
                 - name: LOG_LEVEL
                   value: info
-
-                # Optional: keep runtime files in tmp
-                - name: RENOVATE_BASE_DIR
-                  value: /tmp/renovate
-
-              resources:
-                requests:
-                  cpu: 200m
-                  memory: 512Mi
-                limits:
-                  cpu: "1"
-                  memory: 1Gi

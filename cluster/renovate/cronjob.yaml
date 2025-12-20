@@ -4,7 +4,7 @@ metadata:
   name: renovate
   namespace: renovate
 spec:
-  schedule: "0 3 * * *"   # every 6 hours
+  schedule: "0 3 * * *"   # every night at 03:00
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 2
   failedJobsHistoryLimit: 5
@@ -14,7 +14,6 @@ spec:
       template:
         spec:
           restartPolicy: Never
-          
           containers:
             - name: renovate
               image: ghcr.io/renovatebot/renovate:42.57.1
@@ -32,14 +31,7 @@ spec:
                 - name: RENOVATE_ENDPOINT
                   value: https://api.github.com/
 
-                # Global-only settings belong here:
-                - name: RENOVATE_AUTODISCOVER
-                  value: "false"
-                - name: RENOVATE_ONBOARDING
-                  value: "false"
-                - name: RENOVATE_REQUIRE_CONFIG
-                  value: "ignored"
-
+                # Optional but nice:
                 - name: RENOVATE_TIMEZONE
                   value: Europe/Oslo
                 - name: LOG_LEVEL

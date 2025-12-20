@@ -72,14 +72,7 @@ spec:
     # Enable AppSec/WAF endpoint so the Traefik plugin can talk to it
     # (You can turn this off if you only want classic log-based scenarios.)
     appsec:
-      enabled: true
-      acquisitions:
-        - source: appsec
-          listen_addr: "0.0.0.0:7422"
-          path: /
-          appsec_config: crowdsecurity/crs-vpatch
-          labels:
-            type: appsec
+      enabled: false
       # Optional: custom appsec rules could go here under `configs:`
       # configs:
       #   mycustom-appsec-config.yaml: |

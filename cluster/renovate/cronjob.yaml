@@ -1,0 +1,49 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: renovate
+  namespace: renovate
+spec:
+  schedule: "0 3 * * *"   # every 6 hours
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: renovate
+              image: renovate/renovate:42.57.6  # pin version; don't use :latest
+              args:
+                - "stianmjo/homelab-nebulahvelvet"
+              env:
+                - name: RENOVATE_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: renovate-env
+                      key: RENOVATE_TOKEN
+
+                # Good defaults
+                - name: RENOVATE_PLATFORM
+                  value: github
+                - name: RENOVATE_ENDPOINT
+                  value: https://api.github.com/
+                - name: RENOVATE_TIMEZONE
+                  value: Europe/Oslo
+                - name: LOG_LEVEL
+                  value: info
+
+                # Optional: keep runtime files in tmp
+                - name: RENOVATE_BASE_DIR
+                  value: /tmp/renovate
+
+              resources:
+                requests:
+                  cpu: 200m
+                  memory: 512Mi
+                limits:
+                  cpu: "1"
+                  memory: 1Gi

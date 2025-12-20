@@ -88,14 +88,22 @@ spec:
         format: json
 
     additionalArguments:
-      - "--entrypoints.websecure.http.middlewares=bouncer@kubernetescrd"
+      - "--entrypoints.websecure.http.middlewares=crowdsec-bouncer@kubernetescrd"
 
+    # ✅ THIS is the correct way to mount the Secret as a file
     volumes:
-      - name: crowdsec-bouncer-key
-        secret:
-          secretName: crowdsec-bouncer-traefik
+      - name: crowdsec-bouncer-traefik
+        mountPath: "/run/secrets/crowdsec"
+        type: secret
 
-    additionalVolumeMounts:
-      - name: crowdsec-bouncer-key
-        mountPath: /run/secrets/crowdsec
-        readOnly: true
+    entryPoints:
+      websecure:
+        address: ":443"
+        forwardedHeaders:
+          trustedIPs:
+            - "10.0.0.0/8"
+            - "172.16.0.0/12"
+            - "192.168.0.0/16"
+        http:
+          middlewares:
+            - "crowdsec-bouncer@kubernetescrd"

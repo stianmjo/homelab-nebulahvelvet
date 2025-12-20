@@ -1,0 +1,40 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    ":timezone(Europe/Oslo)"
+  ],
+  "onboarding": false,
+  "requireConfig": "ignored",
+  "platform": "github",
+  "autodiscover": false,
+  "repositories": [
+    "YOUR_GH_ORG_OR_USER/YOUR_REPO"
+  ],
+  "enabledManagers": [
+    "flux",
+    "helm-values",
+    "kubernetes",
+    "regex"
+  ],
+  "flux": {
+    "fileMatch": [
+      "(^|/).*helmrelease\\.ya?ml$",
+      "(^|/).*helmrepository\\.ya?ml$",
+      "(^|/).*kustomization\\.ya?ml$"
+    ]
+  },
+  "packageRules": [
+    {
+      "matchManagers": ["flux"],
+      "groupName": "Flux HelmRelease updates"
+    },
+    {
+      "matchDatasources": ["helm", "docker"],
+      "prCreation": "not-pending",
+      "stabilityDays": 2
+    }
+  ]
+}

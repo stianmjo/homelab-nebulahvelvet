@@ -16,7 +16,7 @@ spec:
           restartPolicy: Never
           containers:
             - name: renovate
-              image: renovate/renovate:42.57.6  # pin version; don't use :latest
+              image: ghcr.io/renovatebot/renovate:42.57.1  # pin version; don't use :latest
               args:
                 - "stianmjo/homelab-nebulahvelvet"
               env:

@@ -73,3 +73,29 @@ spec:
         entryPoints:
           - web          # plain HTTP on port 80
         # no TLS here; it's just http:// on LAN
+
+    experimental:
+      plugins:
+        crowdsec-bouncer-traefik-plugin:
+          moduleName: "github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin"
+          version: "v1.4.7"
+
+    logs:
+      general:
+        level: INFO
+      access:
+        enabled: true
+        format: json
+
+    additionalArguments:
+      - "--entrypoints.websecure.http.middlewares=bouncer@kubernetescrd"
+
+    volumes:
+      - name: crowdsec-bouncer-key
+        secret:
+          secretName: crowdsec-bouncer-traefik
+
+    additionalVolumeMounts:
+      - name: crowdsec-bouncer-key
+        mountPath: /run/secrets/crowdsec
+        readOnly: true

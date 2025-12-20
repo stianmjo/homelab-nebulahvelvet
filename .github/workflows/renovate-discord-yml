@@ -1,14 +1,20 @@
 name: Notify Discord on Renovate PRs
 
 on:
+  # Normal behavior: run when PRs change
   pull_request:
     types: [opened, reopened, ready_for_review]
 
+  # Extra: allow manual runs from the Actions tab
+  workflow_dispatch:
+
 jobs:
   notify-discord:
-    # Only when the PR is from Renovate
-    if: github.actor == 'renovate[bot]'
     runs-on: ubuntu-latest
+
+    # Only send real notifications for Renovate PRs
+    # When run manually, github.event_name == 'workflow_dispatch', so this condition is false
+    if: github.event_name == 'pull_request' && github.actor == 'renovate[bot]'
 
     steps:
       - name: Send embed to Discord
@@ -42,4 +48,15 @@ jobs:
                   }
                 ],
                 "footer": {
-                  "text": "Renovate Bot • Gi
+                  "text": "Renovate Bot • GitOps"
+                }
+              }
+            ]
+          }
+          EOF
+          )
+
+          curl -X POST \
+               -H "Content-Type: application/json" \
+               -d "$payload" \
+               "$DISCORD_WEBHOOK_URL"

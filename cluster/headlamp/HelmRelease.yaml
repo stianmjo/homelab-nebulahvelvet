@@ -1,0 +1,49 @@
+# headlamp-helmrelease.yaml
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: headlamp
+  namespace: headlamp
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: headlamp
+      sourceRef:
+        kind: HelmRepository
+        name: headlamp
+        namespace: flux-system
+        version: "0.39.0"
+  values:
+    # Use in-cluster config (default, but being explicit)
+    config:
+      inCluster: true
+
+    # Let the chart create a ServiceAccount and bind it to a ClusterRole
+    # Default ClusterRole is "cluster-admin". You can tighten this later.
+    serviceAccount:
+      create: true
+      name: headlamp-sa
+
+    clusterRoleBinding:
+      create: true
+      clusterRoleName: cluster-admin
+
+    # Service stays ClusterIP; Traefik will route to it
+    service:
+      type: ClusterIP
+      port: 4466
+
+    # Expose via traefik-internal Ingress
+    ingress:
+      enabled: true
+      # Headlamp chart supports ingressClassName & hosts like a normal k8s Ingress.:contentReference[oaicite:3]{index=3}
+      ingressClassName: traefik-internal
+      annotations:
+        # Make sure we only hit the HTTP entrypoint on the internal Traefik
+        traefik.ingress.kubernetes.io/router.entrypoints: web
+      hosts:
+        - host: dashboard.local.net
+          paths:
+            - path: /
+              type: Prefix

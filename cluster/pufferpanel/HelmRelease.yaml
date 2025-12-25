@@ -20,7 +20,7 @@ spec:
           main:
             image:
               repository: pufferpanel/pufferpanel
-              tag: "2.7.1"
+              tag: "2.7.0"
             env:
               PUFFER_PANEL_REGISTRATIONENABLED: "false"
 

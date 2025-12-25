@@ -8,7 +8,7 @@ spec:
     k8s-app: headlamp
   ports:
     - port: 80
-      targetPort: 31000
+      targetPort: 4466
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -53,7 +53,7 @@ spec:
             httpGet:
               scheme: HTTP
               path: /
-              port: 3100
+              port: 4466
             initialDelaySeconds: 30
             timeoutSeconds: 30
           livenessProbe:

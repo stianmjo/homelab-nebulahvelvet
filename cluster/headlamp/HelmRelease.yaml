@@ -45,7 +45,7 @@ spec:
             - name: HEADLAMP_CONFIG_SERVICE_VERSION
               value: "v0.39.0"
           ports:
-            - containerPort: 31000
+            - containerPort: 4466
               name: http
             - containerPort: 9090
               name: metrics

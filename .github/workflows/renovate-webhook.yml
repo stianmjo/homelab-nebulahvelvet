@@ -2,14 +2,12 @@ name: Notify Discord on Renovate PRs
 
 on:
   pull_request:
-    types: [opened, reopened, ready_for_review]
-  workflow_dispatch:
+    types: [opened, reopened, ready_for_review, synchronize]
 
 jobs:
-  # Real notifications for Renovate PRs
   notify-discord:
     runs-on: ubuntu-latest
-    # ✅ Trigger only for Renovate-style branches
+    # Only for Renovate-style branches
     if: >
       github.event_name == 'pull_request' &&
       startsWith(github.head_ref, 'renovate/')
@@ -24,12 +22,19 @@ jobs:
           REPO: ${{ github.repository }}
           BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
           HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          ACTION: ${{ github.event.action }}
         run: |
+          if [ "$ACTION" = "synchronize" ]; then
+            TITLE="📦 Renovate updated PR #${PR_NUMBER}"
+          else
+            TITLE="📦 Renovate opened PR #${PR_NUMBER}"
+          fi
+
           payload=$(cat <<EOF
           {
             "embeds": [
               {
-                "title": "📦 Renovate opened PR #${PR_NUMBER}",
+                "title": "${TITLE}",
                 "url": "${PR_URL}",
                 "description": "**${PR_TITLE}**",
                 "color": 5793266,
@@ -43,50 +48,15 @@ jobs:
                     "name": "Branch",
                     "value": "\`${HEAD_BRANCH}\` ⟶ \`${BASE_BRANCH}\`",
                     "inline": true
-                  }
-                ],
-                "footer": {
-                  "text": "Renovate Bot • GitOps"
-                }
-              }
-            ]
-          }
-          EOF
-          )
-
-          curl -X POST \
-               -H "Content-Type: application/json" \
-               -d "$payload" \
-               "$DISCORD_WEBHOOK_URL"
-
-  # Manual test job – runs only when you click "Run workflow"
-  test-discord:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch'
-
-    steps:
-      - name: Send TEST embed to Discord
-        env:
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          REPO: ${{ github.repository }}
-          ACTOR: ${{ github.actor }}
-        run: |
-          payload=$(cat <<EOF
-          {
-            "embeds": [
-              {
-                "title": "🧪 TEST: Renovate Discord webhook",
-                "description": "Manual test run from GitHub Actions for \`${REPO}\`",
-                "color": 16753920,
-                "fields": [
+                  },
                   {
-                    "name": "Triggered by",
-                    "value": "<@${ACTOR}>",
+                    "name": "Event",
+                    "value": "\`${ACTION}\`",
                     "inline": true
                   }
                 ],
                 "footer": {
-                  "text": "Manual webhook test"
+                  "text": "Renovate Bot • GitOps"
                 }
               }
             ]

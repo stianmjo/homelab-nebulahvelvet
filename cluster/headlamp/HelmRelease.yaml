@@ -1,50 +1,74 @@
-# headlamp-helmrelease.yaml
-apiVersion: helm.toolkit.fluxcd.io/v2
-kind: HelmRelease
+apiVersion: v1
+kind: Service
 metadata:
   name: headlamp
   namespace: kube-system
 spec:
-  interval: 30m
-  chart:
+  selector:
+    k8s-app: headlamp
+  ports:
+    - port: 80
+      targetPort: 4466
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: headlamp
+  namespace: kube-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: headlamp
+  template:
+    metadata:
+      labels:
+        k8s-app: headlamp
     spec:
-      chart: headlamp
-      version: "0.39.0"
-      sourceRef:
-        kind: HelmRepository
-        name: headlamp
-        namespace: flux-system
-        
-  values:
-    # Use in-cluster config (default, but being explicit)
-    config:
-      inCluster: true
-
-    # Let the chart create a ServiceAccount and bind it to a ClusterRole
-    # Default ClusterRole is "cluster-admin". You can tighten this later.
-    serviceAccount:
-      create: true
-      name: headlamp-admin
-
-    clusterRoleBinding:
-      create: true
-      clusterRoleName: headlamp-admin
-
-    # Service stays ClusterIP; Traefik will route to it
-    service:
-      type: ClusterIP
-      port: 4466
-
-    # Expose via traefik-internal Ingress
-    ingress:
-      enabled: true
-      # Headlamp chart supports ingressClassName & hosts like a normal k8s Ingress.:contentReference[oaicite:3]{index=3}
-      ingressClassName: traefik-internal
-      annotations:
-        # Make sure we only hit the HTTP entrypoint on the internal Traefik
-        traefik.ingress.kubernetes.io/router.entrypoints: web
-      hosts:
-        - host: dashboard.local.net
-          paths:
-            - path: /
-              type: Prefix
+      nodeSelector:
+        kubernetes.io/os: linux
+      containers:
+        - name: headlamp
+          image: ghcr.io/headlamp-k8s/headlamp:v0.39.0
+          args:
+            - "-in-cluster"
+            - "-plugins-dir=/headlamp/plugins"
+          env:
+            - name: HEADLAMP_CONFIG_TRACING_ENABLED
+              value: "true"
+            - name: HEADLAMP_CONFIG_METRICS_ENABLED
+              value: "true"
+            - name: HEADLAMP_CONFIG_OTLP_ENDPOINT
+              value: "otel-collector:4317"
+            - name: HEADLAMP_CONFIG_SERVICE_NAME
+              value: "headlamp"
+            - name: HEADLAMP_CONFIG_SERVICE_VERSION
+              value: "v0.39.0"
+          ports:
+            - containerPort: 4466
+              name: http
+            - containerPort: 9090
+              name: metrics
+          readinessProbe:
+            httpGet:
+              scheme: HTTP
+              path: /
+              port: 4466
+            initialDelaySeconds: 30
+            timeoutSeconds: 30
+          livenessProbe:
+            httpGet:
+              scheme: HTTP
+              path: /
+              port: 4466
+            initialDelaySeconds: 30
+            timeoutSeconds: 30
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: headlamp-admin
+  namespace: kube-system
+  annotations:
+    kubernetes.io/service-account.name: "headlamp-admin"
+type: kubernetes.io/service-account-token

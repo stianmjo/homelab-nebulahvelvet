@@ -4,8 +4,7 @@ metadata:
   name: headlamp
   namespace: kube-system
   annotations:
-    # Use the HTTP entrypoint on traefik-internal (port 80, LAN-only in your setup)
-    traefik.ingress.kubernetes.io/router.entrypoints: web
+
 spec:
   # This must match the ingressClass you configured on traefik-internal
   ingressClassName: traefik-internal

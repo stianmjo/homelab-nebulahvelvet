@@ -7,7 +7,7 @@ on:
 jobs:
   notify-discord:
     runs-on: ubuntu-latest
-    # Only Renovate branches
+    # Only for Renovate-style branches
     if: >
       github.event_name == 'pull_request' &&
       startsWith(github.head_ref, 'renovate/')
@@ -23,68 +23,48 @@ jobs:
           BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
           HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
           ACTION: ${{ github.event.action }}
-          PR_BODY: ${{ github.event.pull_request.body }}
         run: |
-          # 1) Extract content inside all <details>...</details> blocks
-          RELEASE_NOTES="$(printf '%s\n' "$PR_BODY" | awk '
-            /<details>/ { in=1; next }
-            in && /<\/details>/ { in=0; print ""; next }
-            in { print }
-          ')"
-
-          # 2) Strip <summary> tags but keep their text
-          if [ -n "$RELEASE_NOTES" ]; then
-            RELEASE_NOTES="$(printf '%s\n' "$RELEASE_NOTES" | sed 's#</\?summary>##g')"
-          fi
-
-          # 3) Fallback: if nothing found (no <details>), take first 25 lines of PR body
-          if [ -z "$(printf '%s' "$RELEASE_NOTES" | tr -d ' \t\n\r')" ]; then
-            RELEASE_NOTES="$(printf '%s\n' "$PR_BODY" | sed -n '1,25p')"
-          fi
-
-          # 4) Truncate so we stay under Discord's field limit
-          MAXLEN=900
-          LEN=${#RELEASE_NOTES}
-          if [ "$LEN" -gt "$MAXLEN" ]; then
-            RELEASE_NOTES="${RELEASE_NOTES:0:$MAXLEN}\n\n…"
-          fi
-
-          # 5) Title depending on action
           if [ "$ACTION" = "synchronize" ]; then
             TITLE="📦 Renovate updated PR #${PR_NUMBER}"
           else
             TITLE="📦 Renovate opened PR #${PR_NUMBER}"
           fi
 
-          # 6) Build JSON payload with jq
-          jq -n \
-            --arg title "$TITLE" \
-            --arg url "$PR_URL" \
-            --arg prtitle "$PR_TITLE" \
-            --arg repo "$REPO" \
-            --arg base "$BASE_BRANCH" \
-            --arg head "$HEAD_BRANCH" \
-            --arg action "$ACTION" \
-            --arg notes "$RELEASE_NOTES" \
-            '{
-              embeds: [
-                {
-                  title: $title,
-                  url: $url,
-                  description: ("**" + $prtitle + "**"),
-                  color: 5793266,
-                  fields: [
-                    { "name": "Repository", "value": ("`" + $repo + "`"), "inline": true },
-                    { "name": "Branch", "value": ("`" + $head + "` ⟶ `" + $base + "`"), "inline": true },
-                    { "name": "Event", "value": ("`" + $action + "`"), "inline": true },
-                    { "name": "Release notes", "value": $notes, "inline": false }
-                  ],
-                  footer: { "text": "Renovate Bot • GitOps" }
+          payload=$(cat <<EOF
+          {
+            "embeds": [
+              {
+                "title": "${TITLE}",
+                "url": "${PR_URL}",
+                "description": "**${PR_TITLE}**",
+                "color": 5793266,
+                "fields": [
+                  {
+                    "name": "Repository",
+                    "value": "\`${REPO}\`",
+                    "inline": true
+                  },
+                  {
+                    "name": "Branch",
+                    "value": "\`${HEAD_BRANCH}\` ⟶ \`${BASE_BRANCH}\`",
+                    "inline": true
+                  },
+                  {
+                    "name": "Event",
+                    "value": "\`${ACTION}\`",
+                    "inline": true
+                  }
+                ],
+                "footer": {
+                  "text": "Renovate Bot • GitOps"
                 }
-              ]
-            }' > payload.json
+              }
+            ]
+          }
+          EOF
+          )
 
           curl -X POST \
                -H "Content-Type: application/json" \
-               -d @payload.json \
+               -d "$payload" \
                "$DISCORD_WEBHOOK_URL"

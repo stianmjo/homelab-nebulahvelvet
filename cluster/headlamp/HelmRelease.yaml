@@ -35,8 +35,9 @@ spec:
             - "-plugins-dir=/headlamp/plugins"
           env:
             - name: HEADLAMP_CONFIG_TRACING_ENABLED
-              value: "true"
+              value: "false"
             - name: HEADLAMP_CONFIG_METRICS_ENABLED
+              value: "false"
             - name: HEADLAMP_CONFIG_SERVICE_NAME
               value: "headlamp"
             - name: HEADLAMP_CONFIG_SERVICE_VERSION

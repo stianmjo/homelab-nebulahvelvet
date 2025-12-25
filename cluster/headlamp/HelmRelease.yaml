@@ -24,11 +24,11 @@ spec:
     # Default ClusterRole is "cluster-admin". You can tighten this later.
     serviceAccount:
       create: true
-      name: headlamp-sa
+      name: headlamp-admin
 
     clusterRoleBinding:
       create: true
-      clusterRoleName: cluster-admin
+      clusterRoleName: headlamp-admin
 
     # Service stays ClusterIP; Traefik will route to it
     service:

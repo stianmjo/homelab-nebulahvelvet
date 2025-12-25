@@ -9,11 +9,12 @@ spec:
   chart:
     spec:
       chart: headlamp
+      version: "0.39.0"
       sourceRef:
         kind: HelmRepository
         name: headlamp
         namespace: flux-system
-        version: "0.39.0"
+        
   values:
     # Use in-cluster config (default, but being explicit)
     config:

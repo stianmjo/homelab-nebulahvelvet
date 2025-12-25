@@ -9,7 +9,10 @@ jobs:
   # Real notifications for Renovate PRs
   notify-discord:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && github.actor == 'renovate[bot]'
+    # ✅ Trigger only for Renovate-style branches
+    if: >
+      github.event_name == 'pull_request' &&
+      startsWith(github.head_ref, 'renovate/')
 
     steps:
       - name: Send embed to Discord
@@ -66,6 +69,7 @@ jobs:
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           REPO: ${{ github.repository }}
+          ACTOR: ${{ github.actor }}
         run: |
           payload=$(cat <<EOF
           {
@@ -77,7 +81,7 @@ jobs:
                 "fields": [
                   {
                     "name": "Triggered by",
-                    "value": "<@${{ github.actor }}>",
+                    "value": "<@${ACTOR}>",
                     "inline": true
                   }
                 ],

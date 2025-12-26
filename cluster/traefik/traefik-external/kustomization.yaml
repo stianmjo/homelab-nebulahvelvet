@@ -4,3 +4,4 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - HelmRelease.yaml
+  - traefik-external-dashboard-via-internal.yaml

@@ -4,7 +4,7 @@ metadata:
   name: renovate
   namespace: renovate
 spec:
-  schedule: "0 3 * * *"   # every night at 03:00
+  schedule: "0 21 * * *"   # every night at 03:00
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 2
   failedJobsHistoryLimit: 5

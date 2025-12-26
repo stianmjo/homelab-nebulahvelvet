@@ -1,0 +1,18 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-external-dashboard-via-internal
+  namespace: traefik-external
+  annotations:
+    kubernetes.io/ingress.class: traefik-internal
+spec:
+  entryPoints:
+    - web              # from traefik-internal (10.0.2.83:80)
+  routes:
+    - match: Host(`traefik-external.local.net`) &&
+             (PathPrefix(`/api`) || PathPrefix(`/dashboard`))
+      kind: Rule
+      services:
+        - name: traefik-external
+          port: 80     # Service port of traefik-external
+          passHostHeader: true

@@ -67,9 +67,4 @@ spec:
 
     ingressRoute:
       dashboard:
-        enabled: true
-        # Hostname you want to use for the external controller dashboard (LAN only)
-        matchRule: Host(`traefik-external.local.net`)
-        entryPoints:
-          - web          # plain HTTP on port 80
-        # no TLS here; it's just http:// on LAN
+        enabled: false

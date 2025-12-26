@@ -26,7 +26,7 @@ spec:
         allowEmptyServices: true
         allowExternalNameServices: false
 
-      # IMPORTANT: must be ON for dashboard IngressRoute
+      # CRDs must be on so Traefik can see IngressRoutes
       kubernetesCRD:
         enabled: true
 
@@ -43,30 +43,33 @@ spec:
 
     api:
       dashboard: true
+
+    # Expose /api and /dashboard on the internal "traefik" entrypoint only
     additionalArguments:
       - "--api.insecure=true"
 
     ports:
-      # Enable HTTP on 80 (LAN-only, since you won't port-forward it)
+      # HTTP on 80 (public)
       web:
         expose:
           default: true
         port: 8000        # container port
-        exposedPort: 80   # MetalLB / node port 80
+        exposedPort: 80   # MetalLB / LB port 80
 
-      # Public HTTPS on 443 (what you forward from WAN)
+      # HTTPS on 443 (public)
       websecure:
         expose:
           default: true
         port: 8443
         exposedPort: 443
 
-      # Do NOT expose the raw traefik port; dashboard goes via IngressRoute on 'web'
+      # Internal-only Traefik API / dashboard entrypoint
       traefik:
         port: 8080
         expose:
-          default: false
+          default: false   # no LB port for this, only pod port
 
+    # Disable the chart's built-in dashboard IngressRoute
     ingressRoute:
       dashboard:
         enabled: false

@@ -5,3 +5,4 @@ resources:
   - namespace.yaml
   - HelmRelease.yaml
   - traefik-external-dashboard-via-internal.yaml
+  - dashboard-service.yaml

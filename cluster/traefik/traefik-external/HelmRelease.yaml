@@ -43,6 +43,8 @@ spec:
 
     api:
       dashboard: true
+    additionalArguments:
+      - "--api.insecure=true"
 
     ports:
       # Enable HTTP on 80 (LAN-only, since you won't port-forward it)

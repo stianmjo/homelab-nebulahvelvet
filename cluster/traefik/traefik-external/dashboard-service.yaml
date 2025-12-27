@@ -11,5 +11,5 @@ spec:
   ports:
     - name: traefik
       port: 8080
-      targetPort: traefik  # or 8080, depending on how the port is named in the pod
+      targetPort: 8080
       protocol: TCP

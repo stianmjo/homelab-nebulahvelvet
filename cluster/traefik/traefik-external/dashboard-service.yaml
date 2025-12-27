@@ -7,7 +7,7 @@ spec:
   type: ClusterIP
   selector:
     app.kubernetes.io/name: traefik
-    app.kubernetes.io/instance: traefik-external
+    app.kubernetes.io/instance: traefik-external-traefik-external
   ports:
     - name: traefik
       port: 8080

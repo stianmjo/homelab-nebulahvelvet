@@ -29,6 +29,7 @@ spec:
       # CRDs must be on so Traefik can see IngressRoutes
       kubernetesCRD:
         enabled: true
+        ingressClass: traefik-external
 
     ingressClass:
       enabled: true

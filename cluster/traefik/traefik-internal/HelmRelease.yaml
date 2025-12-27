@@ -28,6 +28,7 @@ spec:
       # IMPORTANT: must be ON for the dashboard IngressRoute
       kubernetesCRD:
         enabled: true
+        ingressClass: traefik-internal
 
     ingressClass:
       enabled: true

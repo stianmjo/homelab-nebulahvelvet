@@ -7,11 +7,11 @@ metadata:
     kubernetes.io/ingress.class: traefik-internal
 spec:
   entryPoints:
-    - web                             # 80 on 10.0.2.83 (traefik-internal LB)
+    - web
   routes:
     - match: Host(`traefik-external.local.net`)
       kind: Rule
       services:
         - name: traefik-external-dashboard
-          port: traefik               # <-- use the service port name
+          port: traefik
           passHostHeader: true

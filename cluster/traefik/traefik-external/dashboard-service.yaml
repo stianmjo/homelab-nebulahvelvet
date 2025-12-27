@@ -9,7 +9,7 @@ spec:
     app.kubernetes.io/name: traefik
     app.kubernetes.io/instance: traefik-external
   ports:
-    - name: dashboard
+    - name: traefik
       port: 8080
       targetPort: traefik  # or 8080, depending on how the port is named in the pod
       protocol: TCP

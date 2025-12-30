@@ -31,16 +31,18 @@ spec:
           http:
             port: 8080
 
-    persistence:
+    persistence:  
       config:
         enabled: true
         size: 1Gi
         accessMode: ReadWriteOnce
+        storageClass: longhorn-retain
         globalMounts:
           - path: /etc/pufferpanel
       data:
         enabled: true
         size: 50Gi
         accessMode: ReadWriteOnce
+        storageClass: longhorn-retain
         globalMounts:
           - path: /var/lib/pufferpanel

@@ -9,4 +9,5 @@ resources:
   - cert-manager
   - uptime-kuma
   - longhorn
+  - nfs-provisioner
   - pufferpanel

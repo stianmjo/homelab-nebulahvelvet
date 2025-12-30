@@ -23,19 +23,10 @@ spec:
       server: 10.0.2.5
       path: /var/nfs/shared/media
 
+
     storageClass:
-      defaultClass: false
-      name: nfs-odin
-      allowVolumeExpansion: true
-      reclaimPolicy: Retain
-      archiveOnDelete: true
-      # onDelete:
-      pathPattern: "${.PVC.namespace}-${.PVC.name}"
-      accessModes: ReadWriteMany
-      volumeBindingMode: Immediate
-      annotations: {}
-      mountOptions:
-        - vers=4.1
+      create: false
+      provisionerName: k8s-sigs.io/nfs-odin
 
     leaderElection:
       enabled: true

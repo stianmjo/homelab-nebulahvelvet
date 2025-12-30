@@ -4,43 +4,71 @@ metadata:
   name: webhook-domeneshop
   namespace: cert-manager
 spec:
-  interval: 30m
+  interval: 15m
+  targetNamespace: cert-manager
 
+  # (Highly recommended) ensure cert-manager is ready first
   dependsOn:
     - name: cert-manager
       namespace: cert-manager
 
   chart:
     spec:
+      # Example when you use GitRepository + chart path
       chart: ./deploy/domeneshop-webhook
       sourceRef:
         kind: GitRepository
         name: cert-manager-webhook-domeneshop
         namespace: flux-system
-      interval: 1h
 
   values:
     groupName: api.domeneshop.no
+    # (if the chart supports it)
+    image:
+      repository: domeneshop/cert-manager-webhook-domeneshop
+      tag: latest
 
-    certManager:
-      namespace: cert-manager
-      serviceAccountName: cert-manager
+  postRenderers:
+    - kustomize:
+        patches:
+          # Fix RBAC apiVersion
+          - target:
+              group: rbac.authorization.k8s.io
+              version: v1beta1
+              kind: RoleBinding
+              name: webhook-domeneshop-cert-manager-webhook-domeneshop:secret-reader
+            patch: |-
+              - op: replace
+                path: /apiVersion
+                value: rbac.authorization.k8s.io/v1
 
-    nameOverride: ""
-    fullnameOverride: ""
+          # Fix cert-manager objects used for the webhook serving cert
+          - target:
+              group: cert-manager.io
+              version: v1alpha3
+              kind: Certificate
+              name: webhook-domeneshop-cert-manager-webhook-domeneshop-ca
+            patch: |-
+              - op: replace
+                path: /apiVersion
+                value: cert-manager.io/v1
 
-    service:
-      type: ClusterIP
-      port: 443
+          - target:
+              group: cert-manager.io
+              version: v1alpha3
+              kind: Certificate
+              name: webhook-domeneshop-cert-manager-webhook-domeneshop-webhook-tls
+            patch: |-
+              - op: replace
+                path: /apiVersion
+                value: cert-manager.io/v1
 
-    resources: {}
-      # We usually recommend not to specify default resources and to leave this as a conscious
-      # choice for the user. This also increases chances charts run on environments with little
-      # resources, such as Minikube. If you do want to specify resources, uncomment the following
-      # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-      # limits:
-      #  cpu: 100m
-      #  memory: 128Mi
-      # requests:
-      #  cpu: 100m
-      #  memory: 128Mi
+          - target:
+              group: cert-manager.io
+              version: v1alpha3
+              kind: Issuer
+              name: webhook-domeneshop-cert-manager-webhook-domeneshop-selfsign
+            patch: |-
+              - op: replace
+                path: /apiVersion
+                value: cert-manager.io/v1

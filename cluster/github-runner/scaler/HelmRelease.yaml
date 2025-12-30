@@ -1,0 +1,39 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: arc-runner-set
+  namespace: github-runner
+spec:
+  dependsOn:
+    - name: arc
+      namespace: github-runner
+  interval: 30m
+  chart:
+    spec:
+      chart: gha-runner-scale-set
+      version: "0.13.1"
+      sourceRef:
+        kind: HelmRepository
+        name: arc-charts
+        namespace: flux-system
+  values:
+    # repo or org:
+    githubConfigUrl: "https://github.com/stianmjo/homelab-nebulahvelvet"
+    githubConfigSecret: "arc-github-auth"
+
+    minRunners: 0
+    maxRunners: 5
+
+    template:
+      spec:
+        containers:
+          - name: runner
+            image: ghcr.io/actions/actions-runner:latest
+            command: ["/home/runner/run.sh"]
+            resources:
+              requests:
+                cpu: "500m"
+                memory: "1Gi"
+              limits:
+                cpu: "2000m"
+                memory: "4Gi"

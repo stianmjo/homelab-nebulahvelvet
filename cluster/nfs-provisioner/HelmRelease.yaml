@@ -24,7 +24,6 @@ spec:
       path: /var/nfs/shared/media
 
     storageClass:
-      create: true
       defaultClass: false
       name: nfs-odin
       allowVolumeExpansion: true

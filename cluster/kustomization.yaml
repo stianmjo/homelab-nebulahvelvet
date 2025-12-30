@@ -7,4 +7,5 @@ resources:
   - traefik
   - metalllb
   - cert-manager
+  - longhorn
   - pufferpanel

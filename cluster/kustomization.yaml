@@ -3,6 +3,6 @@ kind: Kustomization
 
 resources:
   - renovate
+  - github-runner
   - traefik
   - pufferpanel
-  - github-runner

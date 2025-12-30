@@ -7,68 +7,18 @@ spec:
   interval: 15m
   targetNamespace: cert-manager
 
-  # (Highly recommended) ensure cert-manager is ready first
   dependsOn:
     - name: cert-manager
       namespace: cert-manager
 
   chart:
     spec:
-      # Example when you use GitRepository + chart path
       chart: ./deploy/domeneshop-webhook
       sourceRef:
         kind: GitRepository
         name: cert-manager-webhook-domeneshop
         namespace: flux-system
+      interval: 1h
 
   values:
     groupName: api.domeneshop.no
-    # (if the chart supports it)
-    image:
-      repository: domeneshop/cert-manager-webhook-domeneshop
-      tag: latest
-
-  postRenderers:
-    - kustomize:
-        patches:
-          # Fix RBAC apiVersion
-          - target:
-              group: rbac.authorization.k8s.io
-              version: v1beta1
-              kind: RoleBinding
-              name: webhook-domeneshop-cert-manager-webhook-domeneshop:secret-reader
-            patch: |-
-              - op: replace
-                path: /apiVersion
-                value: rbac.authorization.k8s.io/v1
-
-          # Fix cert-manager objects used for the webhook serving cert
-          - target:
-              group: cert-manager.io
-              version: v1alpha3
-              kind: Certificate
-              name: webhook-domeneshop-cert-manager-webhook-domeneshop-ca
-            patch: |-
-              - op: replace
-                path: /apiVersion
-                value: cert-manager.io/v1
-
-          - target:
-              group: cert-manager.io
-              version: v1alpha3
-              kind: Certificate
-              name: webhook-domeneshop-cert-manager-webhook-domeneshop-webhook-tls
-            patch: |-
-              - op: replace
-                path: /apiVersion
-                value: cert-manager.io/v1
-
-          - target:
-              group: cert-manager.io
-              version: v1alpha3
-              kind: Issuer
-              name: webhook-domeneshop-cert-manager-webhook-domeneshop-selfsign
-            patch: |-
-              - op: replace
-                path: /apiVersion
-                value: cert-manager.io/v1

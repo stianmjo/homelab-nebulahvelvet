@@ -7,4 +7,4 @@ spec:
   interval: 1h
   url: https://github.com/domeneshop/cert-manager-webhook-domeneshop
   ref:
-    tag: v1.0.0
+    branch: master

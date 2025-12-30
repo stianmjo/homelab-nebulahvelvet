@@ -1,0 +1,35 @@
+name: ARC runner test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: arc-runner-set
+    steps:
+      - name: Show runner details
+        run: |
+          echo "Runner name: $RUNNER_NAME"
+          echo "Runner OS: $RUNNER_OS"
+          echo "Runner arch: $RUNNER_ARCH"
+          echo "Hostname:"
+          hostname
+          echo "Who am I:"
+          whoami
+          echo "Working directory:"
+          pwd
+
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Confirm repo contents
+        run: |
+          ls -la
+          echo "Git version:"
+          git --version
+
+      - name: Quick network check
+        run: |
+          echo "DNS + HTTPS check:"
+          getent hosts github.com || nslookup github.com || true
+          curl -I https://github.com | head -n 5

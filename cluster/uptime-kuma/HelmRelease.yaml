@@ -29,17 +29,4 @@ spec:
       storageClass: longhorn
 
     ingress:
-      enabled: true
-      ingressClassName: traefik-external
-      annotations:
-        cert-manager.io/cluster-issuer: letsencrypt-domeneshop
-        kubernetes.io/ingress.class: traefik-external
-      hosts:
-        - host: status.nebulahvelvet.no
-          paths:
-            - path: /
-              pathType: Prefix
-      tls:
-        - secretName: uptime-kuma-tls
-          hosts:
-            - status.nebulahvelvet.no
+      enabled: false

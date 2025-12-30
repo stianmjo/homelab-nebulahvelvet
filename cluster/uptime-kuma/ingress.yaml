@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: uptime-kuma
+  namespace: uptime-kuma
+  annotations:
+    kubernetes.io/ingress.class: traefik-external
+    cert-manager.io/cluster-issuer: letsencrypt-domeneshop
+spec:
+  ingressClassName: traefik-external
+  rules:
+    - host: status.nebulahvelvet.no
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: uptime-kuma
+                port:
+                  number: 3001
+  tls:
+    - secretName: uptime-kuma-tls
+      hosts:
+        - status.nebulahvelvet.no

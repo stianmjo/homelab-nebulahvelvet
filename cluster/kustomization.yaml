@@ -5,4 +5,5 @@ resources:
   - renovate
   - github-runner
   - traefik
+  - metalllb
   - pufferpanel

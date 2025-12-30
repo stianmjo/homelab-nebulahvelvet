@@ -4,12 +4,13 @@ metadata:
   name: renovate
   namespace: renovate
 spec:
-  schedule: "0 21 * * *"   # every night at 03:00
+  schedule: "0 21 * * *"   # hver kveld kl2100
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 2
-  failedJobsHistoryLimit: 5
+  failedJobsHistoryLimit: 2
   jobTemplate:
     spec:
+      ttlSecondsAfterFinished: 86400
       backoffLimit: 1
       template:
         spec:
@@ -31,7 +32,6 @@ spec:
                 - name: RENOVATE_ENDPOINT
                   value: https://api.github.com/
 
-                # Optional but nice:
                 - name: RENOVATE_TIMEZONE
                   value: Europe/Oslo
                 - name: LOG_LEVEL

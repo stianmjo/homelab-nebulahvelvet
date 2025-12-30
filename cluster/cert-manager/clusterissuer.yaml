@@ -1,0 +1,22 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-domeneshop
+spec:
+  acme:
+    email: "stian@nebulahvelvet.no"
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: le-account-key
+    solvers:
+      - dns01:
+          webhook:
+            groupName: api.domeneshop.no
+            solverName: domeneshop
+            config:
+              APITokenSecretRef:
+                name: domeneshop-credentials
+                key: APIToken
+              APISecretSecretRef:
+                name: domeneshop-credentials
+                key: APISecret

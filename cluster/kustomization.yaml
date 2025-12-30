@@ -6,4 +6,5 @@ resources:
   - github-runner
   - traefik
   - metalllb
+  - cert-manager
   - pufferpanel

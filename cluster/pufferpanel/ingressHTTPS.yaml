@@ -18,7 +18,7 @@ spec:
               service:
                 name: pufferpanel
                 port:
-                  number: 80
+                  number: 8080
   tls:
     - secretName: pufferpanel-tls
       hosts:

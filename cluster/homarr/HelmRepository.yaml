@@ -1,9 +1,8 @@
-# helmrepository.yaml
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
-  name: external-secrets
+  name: homarr-labs
   namespace: flux-system
 spec:
   interval: 1h
-  url: https://charts.external-secrets.io
+  url: https://homarr-labs.github.io/charts/

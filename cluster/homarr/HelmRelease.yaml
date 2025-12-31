@@ -1,0 +1,44 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: homarr
+  namespace: homarr
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: homarr
+      # Pin a known version; update via Renovate later.
+      # (Chart versions are published by homarr-labs/charts.) :contentReference[oaicite:5]{index=5}
+      version: "8.7.0"
+      sourceRef:
+        kind: HelmRepository
+        name: homarr-labs
+        namespace: flux-system
+      interval: 1h
+
+  values:
+    env:
+      TZ: "Europe/Oslo"
+
+    # Persist Homarr DB on a PVC (recommended vs pod disk). :contentReference[oaicite:6]{index=6}
+    persistence:
+      homarrDatabase:
+        enabled: true
+        storageClassName: "longhorn"  # change if needed
+        size: "1Gi"
+
+    service:
+      enabled: true
+
+    # Local-only default (traefik-internal). No TLS here by default.
+    # If you later want HTTPS, see the TLS notes below. :contentReference[oaicite:7]{index=7}
+    ingress:
+      enabled: true
+      ingressClassName: "traefik-internal"
+      annotations: {}
+      hosts:
+        - host: homarr.local.net
+          paths:
+            - path: /
+              pathType: ImplementationSpecific

@@ -25,7 +25,7 @@ spec:
     persistence:
       homarrDatabase:
         enabled: true
-        storageClassName: "longhorn"  # change if needed
+        storageClassName: "longhorn-retain"  # change if needed
         size: "1Gi"
 
     service:

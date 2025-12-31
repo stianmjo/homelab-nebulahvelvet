@@ -18,6 +18,8 @@ spec:
       interval: 1h
 
   values:
+    rbac:
+      enable: true
     env:
       TZ: "Europe/Oslo"
 

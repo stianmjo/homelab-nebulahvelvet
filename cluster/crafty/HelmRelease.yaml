@@ -1,0 +1,141 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: craftycontroller
+  namespace: crafty
+spec:
+  interval: 15m
+
+  chart:
+    spec:
+      chart: craftycontroller
+      version: "0.1.7"
+      sourceRef:
+        kind: HelmRepository
+        name: drewburr-labs-helm-charts
+        namespace: flux-system
+      interval: 1h
+
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+
+  values:
+    # Keep naming stable/predictable
+    fullnameOverride: craftycontroller
+
+    replicas: 1
+
+    image:
+      repository: registry.gitlab.com/crafty-controller/crafty-4
+      tag: latest
+      pullPolicy: IfNotPresent
+
+    imagePullSecrets: []
+
+    nameOverride: ""
+    resources: {}
+
+    livenessProbe:
+      httpGet:
+        path: /
+        port: https
+        scheme: HTTPS
+
+    readinessProbe:
+      httpGet:
+        path: /
+        port: https
+        scheme: HTTPS
+
+    startupProbe:
+      httpGet:
+        path: /
+        port: https
+        scheme: HTTPS
+
+    # ✅ Enable ALL PVCs (you said include all PVCs)
+    persistence:
+      crafty-app-config:
+        enabled: true
+        accessModes:
+          - ReadWriteOnce
+        mountPath: /crafty/app/config
+        requests: 1Gi
+        storageClassName: longhorn-retain
+
+      crafty-servers:
+        enabled: true
+        accessModes:
+          - ReadWriteOnce
+        mountPath: /crafty/servers
+        requests: 10Gi
+        storageClassName: longhorn-retain
+
+      crafty-backups:
+        enabled: true
+        accessModes:
+          - ReadWriteOnce
+        mountPath: /crafty/backups
+        requests: 10Gi
+        storageClassName: longhorn-retain
+
+      crafty-logs:
+        enabled: true
+        accessModes:
+          - ReadWriteOnce
+        mountPath: /crafty/logs
+        requests: 2Gi
+        storageClassName: longhorn-retain
+
+      crafty-import:
+        enabled: true
+        accessModes:
+          - ReadWriteOnce
+        mountPath: /crafty/import
+        requests: 1Gi
+        storageClassName: longhorn-retain
+
+    additionalVolumes: []
+    additionalVolumeMounts: []
+
+    serviceAccount:
+      create: true
+      annotations: {}
+      name: ""
+
+    podAnnotations: {}
+    podSecurityContext: {}
+    securityContext: {}
+
+    # Services:
+    # - keep https (8443) available (Crafty often expects it)
+    # - add http (8000) so Traefik-internal can serve plain HTTP with no TLS
+    # - keep minecraft service (ClusterIP) for later exposure however you want (LB/NodePort/etc)
+    services:
+      https:
+        type: ClusterIP
+        ports:
+          - name: https
+            port: 8443
+            protocol: TCP
+
+      http:
+        type: ClusterIP
+        ports:
+          - name: http
+            port: 8000
+            protocol: TCP
+
+    serviceMonitors: {}
+
+    sftp:
+      enabled: false
+
+    initContainers: []
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}

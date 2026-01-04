@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: crafty-minecraft-lb
+  namespace: crafty
+spec:
+  type: LoadBalancer
+  loadBalancerIP: 10.0.2.89
+  externalTrafficPolicy: Local
+  selector:
+    app.kubernetes.io/instance: craftycontroller
+    app.kubernetes.io/name: craftycontroller
+  ports:
+    - name: minecraft
+      port: 25565
+      targetPort: 25565
+      protocol: TCP

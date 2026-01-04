@@ -122,23 +122,17 @@ spec:
 
     services:
       https:
-        type: ClusterIP
-        ports:
-          - name: https
-            port: 8443
-            protocol: TCP
         ingress:
-          className: traefik-internal
+          className: traefik-external
           annotations:
             cert-manager.io/cluster-issuer: letsencrypt-domeneshop
             traefik.ingress.kubernetes.io/router.entrypoints: websecure
             traefik.ingress.kubernetes.io/service.serversscheme: https
           hosts:
             - host: console.nebulahvelvet.no
-              http:
-                paths:
-                  - path: /
-                    pathType: Prefix
+              paths:
+                - path: /
+                  pathType: Prefix
           tls:
             - hosts:
                 - console.nebulahvelvet.no

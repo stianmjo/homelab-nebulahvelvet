@@ -128,6 +128,7 @@ spec:
             cert-manager.io/cluster-issuer: letsencrypt-domeneshop
             traefik.ingress.kubernetes.io/router.entrypoints: websecure
             traefik.ingress.kubernetes.io/service.serversscheme: https
+            traefik.ingress.kubernetes.io/service.serverstransport: crafty-skipverify@kubernetescrd
           hosts:
             - host: console.nebulahvelvet.no
               paths:

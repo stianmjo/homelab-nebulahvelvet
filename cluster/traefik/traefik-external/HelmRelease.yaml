@@ -48,7 +48,6 @@ spec:
     # Expose /api and /dashboard on the internal "traefik" entrypoint only
     additionalArguments:
       - "--api.insecure=true"
-      - "--serversTransport.insecureSkipVerify=true"
 
     ports:
       # HTTP on 80 (public)

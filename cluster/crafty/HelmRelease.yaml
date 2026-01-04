@@ -116,8 +116,9 @@ spec:
     # - add http (8000) so Traefik-internal can serve plain HTTP with no TLS
     # - keep minecraft service (ClusterIP) for later exposure however you want (LB/NodePort/etc)
     services:
-      enabled: false
+
       https:
+        enabled: false
         type: ClusterIP
         ports:
           - name: https

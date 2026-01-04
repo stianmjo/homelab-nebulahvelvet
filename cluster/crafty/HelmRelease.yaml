@@ -122,13 +122,19 @@ spec:
 
     services:
       https:
+        annotations:
+          traefik.ingress.kubernetes.io/service.serversscheme: https
+          traefik.ingress.kubernetes.io/service.serverstransport: crafty-crafty-skipverify@kubernetescrd
+        type: ClusterIP
+        ports:
+          - name: https
+            port: 8443
+            protocol: TCP
         ingress:
           className: traefik-external
           annotations:
             cert-manager.io/cluster-issuer: letsencrypt-domeneshop
             traefik.ingress.kubernetes.io/router.entrypoints: websecure
-            traefik.ingress.kubernetes.io/service.serversscheme: https
-            traefik.ingress.kubernetes.io/service.serverstransport: crafty-skipverify@kubernetescrd
           hosts:
             - host: console.nebulahvelvet.no
               paths:

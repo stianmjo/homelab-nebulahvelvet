@@ -109,25 +109,31 @@ spec:
     securityContext: {}
 
     services:
-
       https:
         type: ClusterIP
         ports:
           - name: https
             port: 8443
             protocol: TCP
+
         ingress:
           className: "traefik-internal"
           annotations:
             traefik.ingress.kubernetes.io/router.entrypoints: web
             traefik.ingress.kubernetes.io/router.tls: "false"
+
+            # IMPORTANT: Crafty backend is HTTPS on 8443
             traefik.ingress.kubernetes.io/service.serversscheme: https
+
+            # IMPORTANT: Crafty uses a self-signed cert by default -> avoid Traefik 500
+            traefik.ingress.kubernetes.io/service.serverstransport: crafty-insecure@kubernetescrd
+
           hosts:
             - host: panel.local.net
               paths:
                 - path: /
                   pathType: Prefix
-
+          tls: []
       minecraft:
         type: LoadBalancer
         annotations:

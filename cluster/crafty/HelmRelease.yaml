@@ -130,7 +130,7 @@ spec:
           className: "traefik-internal"
           annotations:
             traefik.ingress.kubernetes.io/router.entrypoints: web
-          hosts: "panel.local.net"
+          hosts: [ "panel.local.net" ]
 
       minecraft:
         type: LoadBalancer

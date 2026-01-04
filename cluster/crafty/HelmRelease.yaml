@@ -127,11 +127,23 @@ spec:
           - name: https
             port: 8443
             protocol: TCP
-        # ingress:
-        #   className: ""
-        #   annotations: {}
-        #   hosts: []
-        #   tls: []
+        ingress:
+          className: traefik-internal
+          annotations:
+            cert-manager.io/cluster-issuer: letsencrypt-domeneshop
+            traefik.ingress.kubernetes.io/router.entrypoints: websecure
+            traefik.ingress.kubernetes.io/service.serversscheme: https
+          hosts:
+            - host: console.nebulahvelvet.no
+              http:
+                paths:
+                  - path: /
+                    pathType: Prefix
+          tls:
+            - hosts:
+                - console.nebulahvelvet.no
+              secretName: crafty-console-tls
+
       minecraft:
         type: LoadBalancer
         annotations:

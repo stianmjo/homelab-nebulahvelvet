@@ -45,18 +45,21 @@ spec:
       dashboard: true
 
     ports:
+      # INTERNAL HTTP (80)
       web:
         expose:
           default: true
         port: 8000       # container port
         exposedPort: 80  # MetalLB / node port 80
 
+      # No HTTPS internally (for now)
       websecure:
         expose:
           default: true
         port: 8443
         exposedPort: 443
 
+      # Do NOT expose the traefik port; dashboard goes via IngressRoute on 'web'
       traefik:
         port: 8080
         expose:

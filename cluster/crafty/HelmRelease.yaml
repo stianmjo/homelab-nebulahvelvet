@@ -24,9 +24,6 @@ spec:
       retries: 3
 
   values:
-    # Keep naming stable/predictable
-    fullnameOverride: craftycontroller
-
     replicas: 1
 
     image:

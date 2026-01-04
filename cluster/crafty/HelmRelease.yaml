@@ -119,13 +119,6 @@ spec:
           - name: https
             port: 8443
             protocol: TCP
-
-      http:
-        type: ClusterIP
-        ports:
-          - name: http
-            port: 8000
-            protocol: TCP
         ingress:
           className: "traefik-internal"
           annotations:

@@ -111,14 +111,9 @@ spec:
     podSecurityContext: {}
     securityContext: {}
 
-    # Services:
-    # - keep https (8443) available (Crafty often expects it)
-    # - add http (8000) so Traefik-internal can serve plain HTTP with no TLS
-    # - keep minecraft service (ClusterIP) for later exposure however you want (LB/NodePort/etc)
     services:
 
       https:
-        enabled: false
         type: ClusterIP
         ports:
           - name: https
@@ -133,7 +128,14 @@ spec:
             protocol: TCP
 
       minecraft:
-        enabled: false
+        type: LoadBalancer
+        loadBalancerIP: 10.0.2.89
+        externalTrafficPolicy: Local
+        ports:
+          - name: minecraft
+            port: 25565
+            targetPort: 25565
+            protocol: TCP
 
     serviceMonitors: {}
 

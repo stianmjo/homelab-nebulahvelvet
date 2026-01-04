@@ -6,4 +6,3 @@ resources:
   - HelmRepository.yaml
   - HelmRelease.yaml
   - ingress.yaml
-  - service-minecraft.yaml

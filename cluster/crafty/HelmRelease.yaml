@@ -126,9 +126,15 @@ spec:
           - name: http
             port: 8000
             protocol: TCP
+        ingress:
+          className: "traefik-internal"
+          annotations:
+            traefik.ingress.kubernetes.io/router.entrypoints: web
+          hosts: "panel.local.net"
 
       minecraft:
         type: LoadBalancer
+        externalTrafficPolicy: Local
         annotations:
           metallb.io/loadBalancerIPs: "10.0.2.89"
         ports:

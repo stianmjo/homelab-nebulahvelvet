@@ -4,17 +4,16 @@ metadata:
   name: crafty-panel
   namespace: crafty
   annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-domeneshop
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    # tell Traefik the backend is HTTPS
-    traefik.ingress.kubernetes.io/service.serversscheme: https
 spec:
-  ingressClassName: traefik-internal
+  ingressClassName: traefik-external
   tls:
     - hosts:
-        - panel.local.net
-      secretName: panel-local-tls
+        - panel.nebulahvelvet.no
+      secretName: crafty-panel-tls
   rules:
-    - host: panel.local.net
+    - host: panel.nebulahvelvet.no
       http:
         paths:
           - path: /

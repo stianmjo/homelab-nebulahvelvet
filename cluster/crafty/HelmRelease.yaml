@@ -190,3 +190,17 @@ spec:
     nodeSelector: {}
     tolerations: []
     affinity: {}
+
+  postRenderers:
+  - kustomize:
+      patches:
+        - target:
+            kind: Service
+            name: craftycontroller-minecraft
+          patch: |-
+            apiVersion: v1
+            kind: Service
+            metadata:
+              name: craftycontroller-minecraft
+            spec:
+              externalTrafficPolicy: Local

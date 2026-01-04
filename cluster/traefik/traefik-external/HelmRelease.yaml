@@ -74,3 +74,4 @@ spec:
     ingressRoute:
       dashboard:
         enabled: false
+  

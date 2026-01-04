@@ -118,8 +118,7 @@ spec:
             protocol: TCP
         ingress:
           className: "traefik-internal"
-          annotations:
-            traefik.ingress.kubernetes.io/router.entrypoints: web
+          annotations: {}
           hosts:
             - host: panel.local.net
               paths:

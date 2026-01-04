@@ -10,10 +10,10 @@ spec:
   ingressClassName: traefik-external
   tls:
     - hosts:
-        - panel.nebulahvelvet.no
-      secretName: crafty-panel-tls
+        - console.nebulahvelvet.no
+      secretName: crafty-console-tls
   rules:
-    - host: panel.nebulahvelvet.no
+    - host: console.nebulahvelvet.no
       http:
         paths:
           - path: /

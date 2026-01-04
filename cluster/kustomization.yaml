@@ -10,5 +10,4 @@ resources:
   - uptime-kuma
   - longhorn
   - nfs-provisioner
-  - pufferpanel
   - homarr

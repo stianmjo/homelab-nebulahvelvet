@@ -24,37 +24,40 @@ spec:
       retries: 3
 
   values:
-    replicas: 1
+    # Default values for panel.
+    # This is a YAML-formatted file.
+    # Declare variables to be passed into your templates.
+
+    replicas: 1 # Should always be 1
 
     image:
       repository: registry.gitlab.com/crafty-controller/crafty-4
-      tag: latest
-      pullPolicy: IfNotPresent
+      pullPolicy: Always
+      # Overrides the image tag whose default is the chart appVersion.
+      tag: ''
 
     imagePullSecrets: []
+    nameOverride: ''
+    fullnameOverride: ''
 
-    nameOverride: ""
     resources: {}
 
     livenessProbe:
+      initialDelaySeconds: 30
       httpGet:
         path: /
         port: https
         scheme: HTTPS
-
     readinessProbe:
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      failureThreshold: 18
       httpGet:
         path: /
         port: https
         scheme: HTTPS
+    startupProbe: {}
 
-    startupProbe:
-      httpGet:
-        path: /
-        port: https
-        scheme: HTTPS
-
-    # ✅ Enable ALL PVCs (you said include all PVCs)
     persistence:
       crafty-app-config:
         enabled: true
@@ -63,7 +66,6 @@ spec:
         mountPath: /crafty/app/config
         requests: 1Gi
         storageClassName: longhorn-retain
-
       crafty-servers:
         enabled: true
         accessModes:
@@ -71,42 +73,52 @@ spec:
         mountPath: /crafty/servers
         requests: 10Gi
         storageClassName: longhorn-retain
-
       crafty-backups:
-        enabled: true
+        enabled: false
         accessModes:
           - ReadWriteOnce
         mountPath: /crafty/backups
-        requests: 10Gi
+        requests:
         storageClassName: longhorn-retain
-
       crafty-logs:
-        enabled: true
+        enabled: false
         accessModes:
           - ReadWriteOnce
         mountPath: /crafty/logs
-        requests: 2Gi
+        requests:
         storageClassName: longhorn-retain
-
       crafty-import:
-        enabled: true
+        enabled: false
         accessModes:
           - ReadWriteOnce
         mountPath: /crafty/import
-        requests: 1Gi
+        requests:
         storageClassName: longhorn-retain
 
     additionalVolumes: []
     additionalVolumeMounts: []
 
     serviceAccount:
+      # Specifies whether a service account should be created
       create: true
+      # Annotations to add to the service account
       annotations: {}
-      name: ""
+      # The name of the service account to use.
+      # If not set and create is true, a name is generated using the fullname template
+      name: ''
 
     podAnnotations: {}
-    podSecurityContext: {}
-    securityContext: {}
+
+    podSecurityContext:
+      fsGroup: 0
+
+    # Using the crafty user skips permission checking during container start.
+    # Running as root is not reccommended, but will trigger this process to run,
+    # and may resolve permission issues.
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000 # Built-in Crafty user
+      runAsGroup: 0 # Required for permissions
 
     services:
       https:
@@ -115,25 +127,11 @@ spec:
           - name: https
             port: 8443
             protocol: TCP
-
-        ingress:
-          className: "traefik-internal"
-          annotations:
-            traefik.ingress.kubernetes.io/router.entrypoints: web
-            traefik.ingress.kubernetes.io/router.tls: "false"
-
-            # IMPORTANT: Crafty backend is HTTPS on 8443
-            traefik.ingress.kubernetes.io/service.serversscheme: https
-
-            # IMPORTANT: Crafty uses a self-signed cert by default -> avoid Traefik 500
-            traefik.ingress.kubernetes.io/service.serverstransport: crafty-insecure@kubernetescrd
-
-          hosts:
-            - host: panel.local.net
-              paths:
-                - path: /
-                  pathType: Prefix
-          tls: []
+        # ingress:
+        #   className: ""
+        #   annotations: {}
+        #   hosts: []
+        #   tls: []
       minecraft:
         type: LoadBalancer
         annotations:
@@ -141,15 +139,54 @@ spec:
         ports:
           - name: minecraft
             port: 25565
-            targetPort: 25565
             protocol: TCP
 
-    serviceMonitors: {}
+    serviceMonitors: []
+      # - name: minecraft-metrics
+      #   endpoints:
+      #     - interval: 30s
+      #       path: /
+      #       port: metrics
+      #       scrapeTimeout: 10s
+      #   selector: {}
+      #   namespaceSelector:
+      #     matchNames:
+      #       - "{{ .Release.Namespace }}"
 
     sftp:
       enabled: false
 
+      image:
+        repository: atmoz/sftp
+        tag: alpine
+
+      users:
+        secretKeyRef:
+          name: sftp-users
+          key: users
+
+      resources: {}
+      securityContext: {}
+
+      service:
+        type: ClusterIP
+        annotations: {}
+        port:
+          name: sftp
+          port: 22
+          protocol: TCP
+
+      livenessProbe:
+        tcpSocket:
+          port: sftp
+      readinessProbe:
+        tcpSocket:
+          port: sftp
+
+      additionalEnv: []
+
     initContainers: []
+
     nodeSelector: {}
     tolerations: []
     affinity: {}

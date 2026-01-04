@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: crafty-panel
+  namespace: crafty
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    # tell Traefik the backend is HTTPS
+    traefik.ingress.kubernetes.io/service.serversscheme: https
+spec:
+  ingressClassName: traefik-internal
+  tls:
+    - hosts:
+        - panel.local.net
+      secretName: panel-local-tls
+  rules:
+    - host: panel.local.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: craftycontroller-https
+                port:
+                  number: 8443

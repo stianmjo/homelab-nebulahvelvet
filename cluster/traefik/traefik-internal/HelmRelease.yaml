@@ -55,7 +55,9 @@ spec:
       # No HTTPS internally (for now)
       websecure:
         expose:
-          default: false
+          default: true
+        port: 8443
+        exposedPort: 443
 
       # Do NOT expose the traefik port; dashboard goes via IngressRoute on 'web'
       traefik:
@@ -71,3 +73,6 @@ spec:
         entryPoints:
           - web
         # (no TLS here -> plain http)
+    
+    additionalArguments:
+      - "--serversTransport.insecureSkipVerify=true"

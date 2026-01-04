@@ -129,8 +129,8 @@ spec:
 
       minecraft:
         type: LoadBalancer
-        loadBalancerIP: 10.0.2.89
-        externalTrafficPolicy: Local
+        annotations:
+          metallb.io/loadBalancerIPs: "10.0.2.89"
         ports:
           - name: minecraft
             port: 25565

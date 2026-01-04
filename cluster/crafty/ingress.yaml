@@ -15,6 +15,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: http
+                name: craftycontroller-http
                 port:
                   number: 8000

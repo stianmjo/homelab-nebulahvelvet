@@ -24,6 +24,9 @@ spec:
       retries: 3
 
   values:
+    # Keep naming stable/predictable
+    fullnameOverride: craftycontroller
+
     replicas: 1
 
     image:
@@ -113,6 +116,7 @@ spec:
     # - add http (8000) so Traefik-internal can serve plain HTTP with no TLS
     # - keep minecraft service (ClusterIP) for later exposure however you want (LB/NodePort/etc)
     services:
+      enabled: false
       https:
         type: ClusterIP
         ports:
@@ -126,6 +130,9 @@ spec:
           - name: http
             port: 8000
             protocol: TCP
+
+      minecraft:
+        enabled: false
 
     serviceMonitors: {}
 

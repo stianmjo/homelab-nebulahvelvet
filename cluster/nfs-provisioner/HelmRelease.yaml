@@ -21,7 +21,7 @@ spec:
 
     nfs:
       server: 10.0.2.5
-      path: /var/nfs/shared/media
+      path: /volume/3196953d-1358-4f56-93a8-f41098825855/.srv/.unifi-drive/media/.data
 
 
     storageClass:

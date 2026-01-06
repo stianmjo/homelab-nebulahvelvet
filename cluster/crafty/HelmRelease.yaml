@@ -74,12 +74,12 @@ spec:
         requests: 10Gi
         storageClassName: longhorn-retain
       crafty-backups:
-        enabled: false
+        enabled: true
         accessModes:
           - ReadWriteOnce
         mountPath: /crafty/backups
-        requests:
-        storageClassName: longhorn-retain
+        requests: 50Gi
+        storageClassName: nfs-odin
       crafty-logs:
         enabled: false
         accessModes:

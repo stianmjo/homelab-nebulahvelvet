@@ -3,6 +3,8 @@ kind: ExternalSecret
 metadata:
   name: proton-bridge-test
   namespace: proton-bridge
+  labels:
+    external-secrets.io/type: webhook
 spec:
   refreshInterval: 1m
   secretStoreRef:

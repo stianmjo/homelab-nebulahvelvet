@@ -1,0 +1,20 @@
+apiVersion: network.k8s.io/v1
+kind: Ingress
+metadata: 
+  name: longhorn-ui
+  annotations:
+    kubernetes.io/ingress.class: traefik-internal
+    traefik.ingress.kubernetes.io/service.serverssheme: http
+spec:
+  rules:
+    - host: longhorn.local.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: longhorn-frontend
+                port:
+                  number: 80
+

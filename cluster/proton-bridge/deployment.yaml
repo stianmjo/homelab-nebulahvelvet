@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: proton-bridge
+  namespace: proton-bridge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: proton-bridge
+  template:
+    metadata:
+      labels:
+        app: proton-bridge
+    spec:
+      imagePullSecrets:
+        - name: ghcr-pull
+
+      # Ensure the mounted /data is writable for UID 10001
+      securityContext:
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: "OnRootMismatch"
+
+      containers:
+        - name: proton-bridge
+          image: ghcr.io/stianmjo/proton-bridge:latest
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: api
+              containerPort: 8080
+            - name: monitor
+              containerPort: 8081
+
+          envFrom:
+            - secretRef:
+                name: proton-bridge-env
+
+          volumeMounts:
+            - name: data
+              mountPath: /data
+
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: proton-bridge-data

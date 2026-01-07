@@ -16,4 +16,4 @@ spec:
   data:
     - secretKey: testsecret
       remoteRef:
-        key: "test/test01"
+        key: "test/test01/API-nøkkel"

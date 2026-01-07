@@ -6,4 +6,3 @@ resources:
   - HelmRepository.yaml
   - controller
   - scaler
-  - services

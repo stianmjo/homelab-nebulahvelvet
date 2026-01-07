@@ -4,7 +4,7 @@ metadata:
   name: arc-listener-hl
   namespace: github-runner
 spec:
-  clusterIP: None
+  type: ClusterIP
   selector:
     app.kubernetes.io/name: runner-scale-set-listener
     app.kubernetes.io/instance: arc-runner-set

@@ -4,7 +4,7 @@ metadata:
   name: arc-controller-hl
   namespace: github-runner
 spec:
-  clusterIP: None
+  type: ClusterIP
   selector:
     app.kubernetes.io/name: gha-rs-controller
     app.kubernetes.io/instance: arc

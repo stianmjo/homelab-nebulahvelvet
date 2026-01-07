@@ -6,3 +6,4 @@ resources:
   - HelmRepository.yaml
   - HelmRelease.yaml
   - proton-secret-store.yaml
+  - test.yaml

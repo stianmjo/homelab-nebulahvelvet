@@ -1,0 +1,17 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: proton-bridge-test
+  namespace: proton-bridge
+spec:
+  refreshInterval: 1m
+  secretStoreRef:
+    name: proton-bridge
+    kind: ClusterSecretStore
+  target:
+    name: pb-test-secret
+    creationPolicy: Owner
+  data:
+    - secretKey: testsecret
+      remoteRef:
+        key: "test/test01"

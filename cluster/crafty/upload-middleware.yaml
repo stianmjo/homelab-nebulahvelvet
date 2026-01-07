@@ -1,0 +1,12 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: crafty-body-size
+  namespace: crafty
+spec:
+  buffering:
+    # 1 GiB max upload (bytes)
+    maxRequestBodyBytes: 1073741824
+
+    # Keep first 10 MiB in memory, spill the rest to disk
+    memRequestBodyBytes: 10485760

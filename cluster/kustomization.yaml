@@ -8,7 +8,7 @@ resources:
   - metalllb
   - cert-manager
   - external-secrets
-  - proton-bridge
+#  - proton-bridge
   - uptime-kuma
   - longhorn
   - nfs-provisioner

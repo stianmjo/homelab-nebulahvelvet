@@ -5,5 +5,5 @@ resources:
   - namespace.yaml
   - HelmRepository.yaml
   - HelmRelease.yaml
-  - proton-secret-store.yaml
-  - test.yaml
+#  - proton-secret-store.yaml
+#  - test.yaml

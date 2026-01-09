@@ -1,0 +1,77 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: sonarr
+  namespace: media
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: app-template
+      sourceRef:
+        kind: HelmRepository
+        name: bjw-s
+        namespace: media
+      # renovate: datasource=helm depName=app-template registryUrl=https://bjw-s-labs.github.io/helm-charts/
+      version: "4.5.0"
+      interval: 12h
+
+  values:
+    controllers:
+      sonarr:
+        pod:
+          securityContext:
+            fsGroup: 1000
+            fsGroupChangePolicy: OnRootMismatch
+        containers:
+          app:
+            image:
+              repository: lscr.io/linuxserver/sonarr
+              # renovate: datasource=docker depName=lscr.io/linuxserver/sonarr
+              tag: 4.0.15
+            env:
+              TZ: Europe/Oslo
+              PUID: "1000"
+              PGID: "1000"
+            resources:
+              requests:
+                cpu: 150m
+                memory: 512Mi
+              limits:
+                cpu: "2"
+                memory: 2Gi
+
+    service:
+      app:
+        controller: sonarr
+        ports:
+          http:
+            port: 8989
+
+    ingress:
+      app:
+        enabled: true
+        className: traefik-internal
+        annotations:
+          traefik.ingress.kubernetes.io/router.entrypoints: web
+        hosts:
+          - host: sonarr.local.net
+            paths:
+              - path: /
+                pathType: Prefix
+                service:
+                  identifier: app
+                  port: http
+
+    persistence:
+      config:
+        enabled: true
+        existingClaim: sonarr-config
+        globalMounts:
+          - path: /config
+
+      media:
+        enabled: true
+        existingClaim: media-nfs
+        globalMounts:
+          - path: /media

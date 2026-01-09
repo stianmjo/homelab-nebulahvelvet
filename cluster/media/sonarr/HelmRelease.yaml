@@ -75,3 +75,9 @@ spec:
         existingClaim: media-nfs
         globalMounts:
           - path: /media
+
+      downloads:
+        enabled: true
+        existingClaim: media-nfs
+        globalMounts:
+          - path: /downloads

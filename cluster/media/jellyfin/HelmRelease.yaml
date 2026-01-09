@@ -74,18 +74,6 @@ spec:
       periodSeconds: 10
       failureThreshold: 30
 
-    livenessProbe:
-      httpGet:
-        path: /health
-        port: http
-      initialDelaySeconds: 10
-
-    readinessProbe:
-      httpGet:
-        path: /health
-        port: http
-      initialDelaySeconds: 10
-
     jellyfin:
       env:
         - name: TZ

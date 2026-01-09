@@ -5,4 +5,4 @@ resources:
   - HelmRepository.yaml
   - pvc.yaml
   - jellyfin
-  - qbittorent
+  - qbittorrent

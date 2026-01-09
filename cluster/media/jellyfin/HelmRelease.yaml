@@ -61,11 +61,11 @@ spec:
       requests:
         cpu: 500m
         memory: 2Gi
-        ephemeral-storage: 2Gi
+        ephemeral-storage: 5Gi
       limits:
         cpu: "4"
         memory: 8Gi
-        ephemeral-storage: 30Gi
+        ephemeral-storage: 60Gi
 
     startupProbe:
       tcpSocket:
@@ -98,4 +98,18 @@ spec:
         existingClaim: media-nfs
 
       cache:
-        enabled: false
+        enabled: true
+        type: pvc
+        accessMode: ReadWriteOnce
+        size: 20Gi              # small and realistic
+        storageClass: longhorn-retain
+
+    volumes:
+      - name: transcodes
+        emptyDir:
+          # default = node disk (NOT RAM)
+          sizeLimit: 50Gi       # cap it (works on many clusters; enforcement can vary)
+    
+    volumeMounts:
+      - name: transcodes
+        mountPath: /cache/transcodes

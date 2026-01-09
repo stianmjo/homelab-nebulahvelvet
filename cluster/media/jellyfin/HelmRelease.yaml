@@ -98,16 +98,19 @@ spec:
         existingClaim: media-nfs
 
       cache:
-        enabled: true
-        type: pvc
-        existingClaim: jellyfin-cache
+        enabled: false
 
     volumes:
+      - name: jellyfin-cache
+        persistentVolumeClaim:
+          claimName: jellyfin-cache
       - name: transcodes
         emptyDir:
           # default = node disk (NOT RAM)
           sizeLimit: 50Gi       # cap it (works on many clusters; enforcement can vary)
-    
+
     volumeMounts:
+      - name: jellyfin-cache
+        mountPath: /cache
       - name: transcodes
         mountPath: /cache/transcodes

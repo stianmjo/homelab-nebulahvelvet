@@ -86,3 +86,4 @@ spec:
         existingClaim: media-nfs
         globalMounts:
           - path: /downloads
+            subPath: qbittorrent

@@ -80,3 +80,10 @@ spec:
         existingClaim: qbittorrent-config
         globalMounts:
           - path: /config
+
+      downloads:
+        enabled: true
+        existingClaim: media-nfs
+        globalMounts:
+          - path: /downloads
+            subPath: qbittorrent

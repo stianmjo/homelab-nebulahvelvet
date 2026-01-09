@@ -14,3 +14,4 @@ resources:
   - nfs-provisioner
   - homarr
   - crafty
+  - media

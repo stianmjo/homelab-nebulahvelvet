@@ -61,9 +61,11 @@ spec:
       requests:
         cpu: 500m
         memory: 2Gi
+        ephemeral-storage: 2Gi
       limits:
         cpu: "4"
         memory: 8Gi
+        ephemeral-storage: 30Gi
 
     startupProbe:
       tcpSocket:

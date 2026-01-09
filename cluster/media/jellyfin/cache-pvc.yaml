@@ -1,0 +1,7 @@
+persistence:
+  cache:
+    enabled: true
+    type: pvc
+    accessMode: ReadWriteOnce
+    size: 20Gi
+    storageClass: longhorn-retain

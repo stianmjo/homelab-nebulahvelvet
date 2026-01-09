@@ -100,9 +100,7 @@ spec:
       cache:
         enabled: true
         type: pvc
-        accessMode: ReadWriteOnce
-        size: 20Gi              # small and realistic
-        storageClass: longhorn-retain
+        existingClaim: jellyfin-cache
 
     volumes:
       - name: transcodes

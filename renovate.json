@@ -1,9 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended",
-    ":timezone(Europe/Oslo)"
-  ],
+  "extends": ["config:recommended", ":timezone(Europe/Oslo)"],
 
   "dependencyDashboard": false,
 
@@ -14,5 +11,17 @@
   },
   "kubernetes": {
     "fileMatch": ["^cluster/.+\\.ya?ml$"]
-  }
+  },
+
+  "packageRules": [
+    {
+      "matchDatasources": ["docker"],
+      "versioning": "loose"
+    },
+    {
+      "matchDatasources": ["docker"],
+      "matchUpdateTypes": ["major"],
+      "enabled": true
+    }
+  ]
 }

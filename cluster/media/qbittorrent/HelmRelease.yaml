@@ -31,7 +31,7 @@ spec:
             image:
               repository: lscr.io/linuxserver/qbittorrent
               # renovate: datasource=docker depName=lscr.io/linuxserver/qbittorrent
-              tag: 5.1.4-r1-ls435
+              tag: 5.1.4
             env:
               TZ: Europe/Oslo
               PUID: "1000"

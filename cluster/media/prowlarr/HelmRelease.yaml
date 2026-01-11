@@ -28,7 +28,7 @@ spec:
             image:
               repository: lscr.io/linuxserver/prowlarr
               # renovate: datasource=docker depName=lscr.io/linuxserver/prowlarr
-              tag: 1.37.0
+              tag: 2.3.0
             env:
               TZ: Europe/Oslo
               PUID: "1000"

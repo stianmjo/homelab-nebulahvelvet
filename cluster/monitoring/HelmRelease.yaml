@@ -64,6 +64,9 @@ spec:
         - key: "node-role.kubernetes.io/master"
           operator: "Exists"
           effect: "NoSchedule"
+      extraArgs:
+        - --collector.hwmon
+        - --collector.thermal_zone
 
     # kube-state-metrics is commonly useful; leaving enabled is typical
     kube-state-metrics:

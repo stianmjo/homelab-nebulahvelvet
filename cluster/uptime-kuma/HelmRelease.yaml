@@ -17,6 +17,10 @@ spec:
       interval: 1h
 
   values:
+
+    strategy:
+      type: Recreate
+
     env:
       TZ: Europe/Oslo
 

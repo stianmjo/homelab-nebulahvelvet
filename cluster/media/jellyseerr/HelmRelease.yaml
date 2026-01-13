@@ -19,6 +19,9 @@ spec:
   values:
     controllers:
       jellyseerr:
+        replicas: 1
+        strategy: Recreate
+        
         containers:
           app:
             image:

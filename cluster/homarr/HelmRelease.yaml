@@ -18,6 +18,9 @@ spec:
       interval: 1h
 
   values:
+
+    strategyType: Recreate
+
     rbac:
       enabled: true
     env:

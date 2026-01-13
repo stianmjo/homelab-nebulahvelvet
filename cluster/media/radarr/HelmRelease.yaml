@@ -18,9 +18,9 @@ spec:
 
   values:
     controllers:
-      replicas: 1
-      strategy: Recreate
       radarr:
+        replicas: 1
+        strategy: Recreate
         pod:
           securityContext:
             fsGroup: 1000

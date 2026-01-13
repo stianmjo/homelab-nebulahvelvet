@@ -18,12 +18,12 @@ spec:
 
   values:
     controllers:
-      replicas: 1
-      strategy: Recreate
-      
+
       qbittorrent:
-        # Good default for NFS/shared volumes: keep a consistent UID/GID.
-        # If your NFS permissions differ, we’ll adjust these.
+        
+        replicas: 1
+        strategy: Recreate
+
         pod:
           securityContext:
             fsGroup: 1000

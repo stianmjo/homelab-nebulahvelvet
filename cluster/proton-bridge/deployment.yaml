@@ -5,9 +5,12 @@ metadata:
   namespace: proton-bridge
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: proton-bridge
+    
   template:
     metadata:
       labels:

@@ -25,7 +25,7 @@ spec:
 
       containers:
         - name: proton-bridge
-          image: ghcr.io/stianmjo/proton-bridge:latest
+          image: ghcr.io/stianmjo/proton-bridge:v.0.1.0
           imagePullPolicy: IfNotPresent
 
           ports:

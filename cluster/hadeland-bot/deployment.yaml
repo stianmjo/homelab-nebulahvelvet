@@ -5,6 +5,8 @@ metadata:
   namespace: hadeland-bot
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: discord-bot
@@ -32,7 +34,7 @@ spec:
 
       containers:
         - name: discord-bot
-          image: ghcr.io/stianmjo/hadeland-bot:v0.1.0
+          image: ghcr.io/stianmjo/hadeland-bot:v0.1.1
           imagePullPolicy: IfNotPresent
           env:
             - name: DISCORD_TOKEN

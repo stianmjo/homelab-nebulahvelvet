@@ -65,6 +65,25 @@ spec:
         expose:
           default: false
 
+      metrics:
+        port: 9100
+        expose: true
+        exposedPort: 9100
+        protocol: TCP
+    
+    metrics:
+      prometheus:
+        enabled: true
+        entryPoint: metrics
+        addEntryPointsLabels: true
+        addRoutersLabels: true
+        addServicesLabels: true
+        serviceMonitor:
+          enabled: true
+          interval: 30s
+          additionalLabels:
+            release: kube-prometheus-stack
+
     ingressRoute:
       dashboard:
         enabled: true

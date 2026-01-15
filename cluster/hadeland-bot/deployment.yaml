@@ -32,7 +32,7 @@ spec:
 
       containers:
         - name: discord-bot
-          image: ghcr.io/<owner>/<repo>:dev
+          image: ghcr.io/stianmjo/hadeland-bot:v0.1.0
           imagePullPolicy: IfNotPresent
           env:
             - name: DISCORD_TOKEN

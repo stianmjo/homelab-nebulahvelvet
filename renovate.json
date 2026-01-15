@@ -25,7 +25,10 @@
     },
     {
       "matchDatasources": ["docker"],
-      "matchPackageNames": ["ghcr.io/stianmjo/proton-bridge"],
+      "matchPackageNames": [
+        "ghcr.io/stianmjo/proton-bridge",
+        "ghcr.io/stianmjo/hadeland-bot"
+      ],
       "enabled": false
     }
   ]

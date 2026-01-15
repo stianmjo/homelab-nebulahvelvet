@@ -30,6 +30,7 @@ spec:
       kubernetesCRD:
         enabled: true
         ingressClass: traefik-external
+        allowCrossNamespace: true
 
     ingressClass:
       enabled: true

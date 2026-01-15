@@ -1,0 +1,29 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: public-ratelimit
+  namespace: traefik-external
+spec:
+  rateLimit:
+    average: 20
+    burst: 40
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: public-inflight
+  namespace: traefik-external
+spec:
+  inFlightReq:
+    amount: 60
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: public-chain
+  namespace: traefik-external
+spec:
+  chain:
+    middlewares:
+      - name: public-ratelimit
+      - name: public-inflight

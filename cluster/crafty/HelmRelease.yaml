@@ -135,7 +135,8 @@ spec:
           annotations:
             cert-manager.io/cluster-issuer: letsencrypt-domeneshop
             traefik.ingress.kubernetes.io/router.entrypoints: websecure
-            traefik.ingress.kubernetes.io/router.middlewares: crafty-crafty-body-size@kubernetescrd
+            traefik.ingress.kubernetes.io/router.middlewares: crafty-crafty-body-size@kubernetescrd, traefik-external-public-chain@kubernetescrd
+          
           hosts:
             - host: console.nebulahvelvet.no
               paths:

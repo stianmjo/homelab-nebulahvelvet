@@ -5,7 +5,9 @@ metadata:
   namespace: uptime-kuma
   annotations:
     kubernetes.io/ingress.class: traefik-external
+    traefik.ingress.kubernetes.io/router.middlewares: traefik-external-public-chain@kubernetescrd
     cert-manager.io/cluster-issuer: letsencrypt-domeneshop
+
 spec:
   ingressClassName: traefik-external
   rules:

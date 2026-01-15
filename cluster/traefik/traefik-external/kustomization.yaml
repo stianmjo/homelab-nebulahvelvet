@@ -6,3 +6,4 @@ resources:
   - HelmRelease.yaml
   - dashboard-ingressRoute.yaml
   - dashboard-service.yaml
+  - public-middleware.yaml

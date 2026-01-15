@@ -19,15 +19,16 @@ spec:
     deployment:
       replicas: 2
 
-      # ADDED: Traefik plugins need writable storage at /plugins-storage.
-      # Your Traefik pod is running with a read-only root filesystem, so without this
-      # the plugin manager can't create /plugins-storage/sources and plugins are disabled.
+      # ✅ ADDED: writable storage for Traefik plugin manager (/plugins-storage)
+      # Fixes: "mkdir plugins-storage: read-only file system"
       additionalVolumes:
         - name: plugins-storage
           emptyDir: {}
-      additionalVolumeMounts:
-        - name: plugins-storage
-          mountPath: /plugins-storage
+
+    # ✅ ADDED: mount that volume into the Traefik container
+    additionalVolumeMounts:
+      - name: plugins-storage
+        mountPath: /plugins-storage
 
     providers:
       kubernetesIngress:
@@ -36,7 +37,6 @@ spec:
         allowEmptyServices: true
         allowExternalNameServices: false
 
-      # CRDs must be on so Traefik can see IngressRoutes
       kubernetesCRD:
         enabled: true
         ingressClass: traefik-external
@@ -56,33 +56,33 @@ spec:
     api:
       dashboard: true
 
+    experimental:
+      plugins:
+        wrangler:
+          moduleName: github.com/holysoles/bot-wrangler-traefik-plugin
+          version: v0.10.1
+
     additionalArguments:
       - "--api.insecure=true"
-      - "--experimental.plugins.wrangler.modulename=github.com/holysoles/bot-wrangler-traefik-plugin"
-      - "--experimental.plugins.wrangler.version=v0.10.1"
 
     ports:
-      # HTTP on 80 (public)
       web:
         expose:
           default: true
-        port: 8000        # container port
-        exposedPort: 80   # MetalLB / LB port 80
+        port: 8000
+        exposedPort: 80
 
-      # HTTPS on 443 (public)
       websecure:
         expose:
           default: true
         port: 8443
         exposedPort: 443
 
-      # Internal-only Traefik API / dashboard entrypoint
       traefik:
         port: 8080
         expose:
-          default: false   # no LB port for this, only pod port
+          default: false
 
-    # Disable the chart's built-in dashboard IngressRoute
     ingressRoute:
       dashboard:
         enabled: false

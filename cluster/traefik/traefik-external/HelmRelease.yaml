@@ -14,10 +14,20 @@ spec:
         name: traefik
         namespace: flux-system
       interval: 1h
-  
+
   values:
     deployment:
       replicas: 2
+
+      # ADDED: Traefik plugins need writable storage at /plugins-storage.
+      # Your Traefik pod is running with a read-only root filesystem, so without this
+      # the plugin manager can't create /plugins-storage/sources and plugins are disabled.
+      additionalVolumes:
+        - name: plugins-storage
+          emptyDir: {}
+      additionalVolumeMounts:
+        - name: plugins-storage
+          mountPath: /plugins-storage
 
     providers:
       kubernetesIngress:
@@ -46,7 +56,6 @@ spec:
     api:
       dashboard: true
 
-    # Expose /api and /dashboard on the internal "traefik" entrypoint only
     additionalArguments:
       - "--api.insecure=true"
       - "--experimental.plugins.wrangler.modulename=github.com/holysoles/bot-wrangler-traefik-plugin"

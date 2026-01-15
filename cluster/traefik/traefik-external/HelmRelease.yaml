@@ -49,6 +49,8 @@ spec:
     # Expose /api and /dashboard on the internal "traefik" entrypoint only
     additionalArguments:
       - "--api.insecure=true"
+      - "--experimental.plugins.wrangler.modulename=github.com/holysoles/bot-wrangler-traefik-plugin"
+      - "--experimental.plugins.wrangler.version=v0.10.1"
 
     ports:
       # HTTP on 80 (public)

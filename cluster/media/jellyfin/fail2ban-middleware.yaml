@@ -1,0 +1,20 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: f2b-jellyfin
+  namespace: traefik-external
+spec:
+  plugin:
+    fail2ban:
+      rules:
+        enabled: true
+        # Gentle: don't count 401/404 for Jellyfin (easy self-ban)
+        statuscode: "403,429"
+        findtime: "10m"
+        maxretry: 12
+        bantime: "1h"
+        urlregexps:
+          - regexp: "^/ping$"
+            mode: allow
+          - regexp: "^/metrics$"
+            mode: allow

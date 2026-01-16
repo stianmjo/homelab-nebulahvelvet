@@ -1,0 +1,20 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: f2b-kuma
+  namespace: traefik-external
+spec:
+  plugin:
+    fail2ban:
+      rules:
+        enabled: true
+        # Login/admin UI: count auth failures, blocks, and rate limiting
+        statuscode: "401,403,429"
+        findtime: "10m"
+        maxretry: 8
+        bantime: "2h"
+        urlregexps:
+          - regexp: "^/ping$"
+            mode: allow
+          - regexp: "^/metrics$"
+            mode: allow

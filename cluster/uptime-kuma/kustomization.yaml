@@ -6,3 +6,4 @@ resources:
   - HelmRepository.yaml
   - HelmRelease.yaml
   - ingress.yaml
+  - fail2ban-middleware.yaml

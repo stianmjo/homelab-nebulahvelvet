@@ -6,4 +6,4 @@ resources:
   - HelmRepository.yaml
   - HelmRelease.yaml
   - ServersTransport.yaml
-  - upload-middleware.yaml
+  - middleware.yaml

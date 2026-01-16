@@ -33,36 +33,11 @@ spec:
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
-  name: public-fail2ban
-  namespace: traefik-external
-spec:
-  plugin:
-    fail2ban:
-      rules:
-        enabled: true
-        # Count these response codes as "failures"
-        # (catches bot-wrangler blocks (403), auth failures (401/403), scans (404), and rate-limit (429))
-        statuscode: "401,403,404,429"
-        findtime: "10m"
-        maxretry: 10
-        bantime: "1h"
-        # Don't ever ban based on these paths (optional, keep it small)
-        urlregexps:
-          - regexp: "^/ping$"
-            mode: allow
-          - regexp: "^/metrics$"
-            mode: allow
-
----
-apiVersion: traefik.io/v1alpha1
-kind: Middleware
-metadata:
   name: public-chain
   namespace: traefik-external
 spec:
   chain:
     middlewares:
-#      - name: public-fail2ban
       - name: public-botwrangler 
       - name: public-ratelimit
       - name: public-inflight

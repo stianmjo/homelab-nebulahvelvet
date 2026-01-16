@@ -61,7 +61,11 @@ spec:
         wrangler:
           moduleName: github.com/holysoles/bot-wrangler-traefik-plugin
           version: v0.10.1
-
+      
+        fail2ban:
+          moduleName: github.com/tomMoulard/fail2ban
+          version: v0.8.9
+          
     additionalArguments:
       - "--api.insecure=true"
 

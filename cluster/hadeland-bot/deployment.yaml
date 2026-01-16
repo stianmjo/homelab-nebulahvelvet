@@ -34,7 +34,7 @@ spec:
 
       containers:
         - name: discord-bot
-          image: ghcr.io/stianmjo/hadeland-bot:v0.2.2
+          image: ghcr.io/stianmjo/hadeland-bot:v0.2.6
           imagePullPolicy: IfNotPresent
           env:
             - name: DISCORD_TOKEN
@@ -46,6 +46,8 @@ spec:
               value: /data/bot.db
             - name: TZ
               value: Europe/Oslo
+            - name: GUILD_ID
+              value: "1208118053913628774"
           securityContext:
             runAsUser: 65532
             runAsGroup: 65532

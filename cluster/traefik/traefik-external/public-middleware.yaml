@@ -62,7 +62,7 @@ metadata:
 spec:
   chain:
     middlewares:
-      - name: public-fail2ban
+#      - name: public-fail2ban
       - name: public-botwrangler 
       - name: public-ratelimit
       - name: public-inflight

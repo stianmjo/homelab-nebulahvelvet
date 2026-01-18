@@ -38,6 +38,7 @@ spec:
               PUID: "1000"
               PGID: "1000"
               WEBUI_PORT: "8080"
+
             resources:
               requests:
                 cpu: 200m
@@ -59,20 +60,19 @@ spec:
             env:
               TZ: Europe/Oslo
 
-              # Use the mounted /gluetun/wireguard/wg0.conf
+              # WireGuard using mounted /gluetun/wireguard/wg0.conf
               VPN_SERVICE_PROVIDER: custom
               VPN_TYPE: wireguard
               VPN_INTERFACE: wg0
 
-              # Let Traefik-internal / LAN reach the WebUI
-              FIREWALL_INPUT_PORTS: "8080"
+              # Allow WebUI + qbit listen port into the pod (from LAN/cluster)
+              FIREWALL_INPUT_PORTS: "8080,6881"
 
-              # Allow cluster/LAN access (adjust if you want stricter)
+              # Allow access to local/cluster networks (Traefik, DNS, etc.)
               FIREWALL_OUTBOUND_SUBNETS: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
 
-              # (Optional) Helps when you enable NAT-PMP port forwarding
-              VPN_PORT_FORWARDING: "on"
-              VPN_PORT_FORWARDING_PROVIDER: protonvpn
+              # You turned NAT-PMP off, keep it simple/static
+              VPN_PORT_FORWARDING: "off"
 
             resources:
               requests:
@@ -127,7 +127,7 @@ spec:
             app:
               - path: /downloads
 
-      # WireGuard config secret (wg0.conf)
+      # Secret must contain key: wg0.conf
       wireguard:
         enabled: true
         type: secret
@@ -139,7 +139,7 @@ spec:
                 subPath: wg0.conf
                 readOnly: true
 
-      # Required for WireGuard tunnel
+      # Required for WireGuard tunnel interface
       tun:
         enabled: true
         type: hostPath

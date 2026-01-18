@@ -1,0 +1,51 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: f2b-jellyfin
+  namespace: traefik-external
+spec:
+  plugin:
+    fail2ban:
+      rules:
+        enabled: true
+        # Jellyfin-friendly: only count real blocks
+        statuscode: "403"
+        findtime: "10m"
+        maxretry: 10
+        bantime: "1h"
+        urlregexps:
+          - regexp: "^/ping$"
+            mode: allow
+          - regexp: "^/metrics$"
+            mode: allow
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: jellyfin-ratelimit
+  namespace: traefik-external
+spec:
+  rateLimit:
+    average: 200
+    burst: 400
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: jellyfin-inflight
+  namespace: traefik-external
+spec:
+  inFlightReq:
+    amount: 200
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: jellyfin-chain
+  namespace: traefik-external
+spec:
+  chain:
+    middlewares:
+      - name: public-botwrangler
+      - name: jellyfin-ratelimit
+      - name: jellyfin-inflight

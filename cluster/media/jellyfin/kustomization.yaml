@@ -5,4 +5,4 @@ resources:
   - HelmRelease.yaml
   - HelmRepository.yaml
   - cache-pvc.yaml
-  - fail2ban-middleware.yaml
+  - middleware.yaml

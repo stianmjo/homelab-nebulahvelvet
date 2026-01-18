@@ -18,9 +18,7 @@ spec:
 
   values:
     controllers:
-
       qbittorrent:
-        
         replicas: 1
         strategy: Recreate
 
@@ -40,7 +38,6 @@ spec:
               PUID: "1000"
               PGID: "1000"
               WEBUI_PORT: "8080"
-
             resources:
               requests:
                 cpu: 200m
@@ -48,6 +45,42 @@ spec:
               limits:
                 cpu: "2"
                 memory: 2Gi
+
+          gluetun:
+            image:
+              repository: ghcr.io/qdm12/gluetun
+              # renovate: datasource=docker depName=ghcr.io/qdm12/gluetun
+              tag: v3.41.0
+            securityContext:
+              runAsUser: 0
+              capabilities:
+                add:
+                  - NET_ADMIN
+            env:
+              TZ: Europe/Oslo
+
+              # Use the mounted /gluetun/wireguard/wg0.conf
+              VPN_SERVICE_PROVIDER: custom
+              VPN_TYPE: wireguard
+              VPN_INTERFACE: wg0
+
+              # Let Traefik-internal / LAN reach the WebUI
+              FIREWALL_INPUT_PORTS: "8080"
+
+              # Allow cluster/LAN access (adjust if you want stricter)
+              FIREWALL_OUTBOUND_SUBNETS: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+
+              # (Optional) Helps when you enable NAT-PMP port forwarding
+              VPN_PORT_FORWARDING: "on"
+              VPN_PORT_FORWARDING_PROVIDER: protonvpn
+
+            resources:
+              requests:
+                cpu: 50m
+                memory: 128Mi
+              limits:
+                cpu: 500m
+                memory: 512Mi
 
     service:
       app:
@@ -81,11 +114,38 @@ spec:
       config:
         enabled: true
         existingClaim: qbittorrent-config
-        globalMounts:
-          - path: /config
+        advancedMounts:
+          qbittorrent:
+            app:
+              - path: /config
 
       downloads:
         enabled: true
         existingClaim: media-nfs
-        globalMounts:
-          - path: /downloads
+        advancedMounts:
+          qbittorrent:
+            app:
+              - path: /downloads
+
+      # WireGuard config secret (wg0.conf)
+      wireguard:
+        enabled: true
+        type: secret
+        name: qbittorrent-wireguard
+        advancedMounts:
+          qbittorrent:
+            gluetun:
+              - path: /gluetun/wireguard/wg0.conf
+                subPath: wg0.conf
+                readOnly: true
+
+      # Required for WireGuard tunnel
+      tun:
+        enabled: true
+        type: hostPath
+        hostPath: /dev/net/tun
+        hostPathType: CharDevice
+        advancedMounts:
+          qbittorrent:
+            gluetun:
+              - path: /dev/net/tun

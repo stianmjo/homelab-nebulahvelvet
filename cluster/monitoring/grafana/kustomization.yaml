@@ -4,4 +4,4 @@ kind: Kustomization
 resources:
   - HelmRelease-grafana.yaml
   - HelmRelease-alloy.yaml
-  - HelmRelease.yaml
+  - HelmRepository.yaml

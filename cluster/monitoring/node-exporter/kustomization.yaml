@@ -4,4 +4,4 @@ kind: Kustomization
 resources:
   - HelmRelease-exporter.yaml
   - HelmRelease-metrics.yaml
-  - HelmRelease.yaml
+  - HelmRepository.yaml

@@ -5,3 +5,4 @@ resources:
   - HelmRepository.yaml
   - HelmRelease-grafana.yaml
   - HelmRelease-alloy.yaml
+  - ingress.yaml

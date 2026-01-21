@@ -5,3 +5,4 @@ resources:
   - victoriametrics
   - node-exporter
   - grafana
+  - ingress.yaml

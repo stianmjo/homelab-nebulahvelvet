@@ -23,14 +23,12 @@ spec:
     alloy:
       configMap:
         content: |
-          // Remote write to VictoriaMetrics Single
           prometheus.remote_write "victoriametrics" {
             endpoint {
               url = "http://vms:8428/api/v1/write"
             }
           }
 
-          // Discover Services in monitoring namespace
           discovery.kubernetes "services_monitoring" {
             role = "service"
             namespaces {
@@ -39,7 +37,6 @@ spec:
             }
           }
 
-          // ---- node-exporter (service port usually named "metrics") ----
           discovery.relabel "node_exporter_svc" {
             targets = discovery.kubernetes.services_monitoring.targets
 
@@ -57,11 +54,10 @@ spec:
           }
 
           prometheus.scrape "node_exporter" {
-            targets    = discovery.relabel.node_exporter_svc.targets
+            targets    = discovery.relabel.node_exporter_svc.output
             forward_to = [prometheus.remote_write.victoriametrics.receiver]
           }
 
-          // ---- kube-state-metrics (service port often named "http") ----
           discovery.relabel "kube_state_metrics_svc" {
             targets = discovery.kubernetes.services_monitoring.targets
 
@@ -79,6 +75,6 @@ spec:
           }
 
           prometheus.scrape "kube_state_metrics" {
-            targets    = discovery.relabel.kube_state_metrics_svc.targets
+            targets    = discovery.relabel.kube_state_metrics_svc.output
             forward_to = [prometheus.remote_write.victoriametrics.receiver]
           }

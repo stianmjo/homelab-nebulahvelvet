@@ -1,0 +1,84 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: alloy
+  namespace: monitoring
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: alloy
+      version: "1.5.2"
+      sourceRef:
+        kind: HelmRepository
+        name: grafana
+        namespace: flux-system
+      interval: 1h
+  values:
+    rbac:
+      create: true
+    serviceAccount:
+      create: true
+
+    alloy:
+      configMap:
+        content: |
+          // Remote write to VictoriaMetrics Single
+          prometheus.remote_write "victoriametrics" {
+            endpoint {
+              url = "http://vms:8428/api/v1/write"
+            }
+          }
+
+          // Discover Services in monitoring namespace
+          discovery.kubernetes "services_monitoring" {
+            role = "service"
+            namespaces {
+              own_namespace = false
+              names         = ["monitoring"]
+            }
+          }
+
+          // ---- node-exporter (service port usually named "metrics") ----
+          discovery.relabel "node_exporter_svc" {
+            targets = discovery.kubernetes.services_monitoring.targets
+
+            rule {
+              action        = "keep"
+              source_labels = ["__meta_kubernetes_service_label_app_kubernetes_io_name"]
+              regex         = "prometheus-node-exporter"
+            }
+
+            rule {
+              action        = "keep"
+              source_labels = ["__meta_kubernetes_service_port_name"]
+              regex         = "metrics"
+            }
+          }
+
+          prometheus.scrape "node_exporter" {
+            targets    = discovery.relabel.node_exporter_svc.targets
+            forward_to = [prometheus.remote_write.victoriametrics.receiver]
+          }
+
+          // ---- kube-state-metrics (service port often named "http") ----
+          discovery.relabel "kube_state_metrics_svc" {
+            targets = discovery.kubernetes.services_monitoring.targets
+
+            rule {
+              action        = "keep"
+              source_labels = ["__meta_kubernetes_service_label_app_kubernetes_io_name"]
+              regex         = "kube-state-metrics"
+            }
+
+            rule {
+              action        = "keep"
+              source_labels = ["__meta_kubernetes_service_port_name"]
+              regex         = "http|metrics"
+            }
+          }
+
+          prometheus.scrape "kube_state_metrics" {
+            targets    = discovery.relabel.kube_state_metrics_svc.targets
+            forward_to = [prometheus.remote_write.victoriametrics.receiver]
+          }

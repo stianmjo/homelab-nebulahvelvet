@@ -15,5 +15,5 @@ resources:
   - homarr
   - crafty
   - media
-#  - monitoring
+  - monitoring
   - hadeland-bot

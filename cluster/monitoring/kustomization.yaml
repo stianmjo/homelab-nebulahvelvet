@@ -3,5 +3,5 @@ kind: Kustomization
 
 resources:
   - victoriametrics
-  - grafana
   - node-exporter
+  - grafana

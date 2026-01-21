@@ -78,3 +78,44 @@ spec:
             targets    = discovery.relabel.kube_state_metrics_svc.output
             forward_to = [prometheus.remote_write.victoriametrics.receiver]
           }
+
+          discovery.kubernetes "services_traefik" {
+            role = "service"
+            namespaces {
+              own_namespace = false
+              names         = ["traefik-external", "traefik-internal"]
+            }
+          }
+
+          discovery.relabel "traefik_metrics_svc" {
+            targets = discovery.kubernetes.services_traefik.targets
+
+            rule {
+              action        = "keep"
+              source_labels = ["__meta_kubernetes_service_name"]
+              regex         = ".*traefik.*"
+            }
+
+            rule {
+              action        = "keep"
+              source_labels = ["__meta_kubernetes_service_port_name"]
+              regex         = "metrics|prometheus"
+            }
+
+            rule {
+              action        = "replace"
+              source_labels = ["__meta_kubernetes_namespace"]
+              target_label  = "namespace"
+            }
+            rule {
+              action        = "replace"
+              source_labels = ["__meta_kubernetes_service_name"]
+              target_label  = "service"
+            }
+          }
+
+          prometheus.scrape "traefik" {
+            targets    = discovery.relabel.traefik_metrics_svc.output
+            forward_to = [prometheus.remote_write.victoriametrics.receiver]
+          }
+

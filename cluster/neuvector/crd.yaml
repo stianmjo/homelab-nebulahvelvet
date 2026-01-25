@@ -1,0 +1,19 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: neuvector-crd
+  namespace: neuvector
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: crd
+      version: "2.8.10" # renovate: datasource=helm depName=neuvector/crd
+      sourceRef:
+        kind: HelmRepository
+        name: neuvector
+        namespace: flux-system
+  install:
+    crds: CreateReplace
+  upgrade:
+    crds: CreateReplace

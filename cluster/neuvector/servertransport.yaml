@@ -1,0 +1,8 @@
+# Traefik: skip verification to the WebUI's self-signed backend cert
+apiVersion: traefik.io/v1alpha1
+kind: ServersTransport
+metadata:
+  name: webui-skipverify
+  namespace: neuvector
+spec:
+  insecureSkipVerify: true

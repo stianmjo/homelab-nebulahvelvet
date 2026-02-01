@@ -10,7 +10,7 @@ spec:
       chart: homarr
       # Pin a known version; update via Renovate later.
       # (Chart versions are published by homarr-labs/charts.) :contentReference[oaicite:5]{index=5}
-      version: "8.10.0"
+      version: "8.11.0"
       sourceRef:
         kind: HelmRepository
         name: homarr-labs

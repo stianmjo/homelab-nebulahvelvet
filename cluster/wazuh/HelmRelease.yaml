@@ -28,15 +28,7 @@ spec:
 
       # (valgfritt) Ingress til dashboard - juster host + ingressClassName etter oppsettet ditt
       ingress:
-        enabled: true
-        ingressClassName: traefik-internal
-        annotations:
-          traefik.ingress.kubernetes.io/router.entrypoints: web
-        hosts:
-          - host: wazuh.local.net
-            paths:
-              - path: /
-                pathType: Prefix
+        enabled: false
 
     wazuh:
       master:

@@ -1,0 +1,52 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: wazuh
+  namespace: wazuh
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: ./charts/wazuh
+      sourceRef:
+        kind: GitRepository
+        name: wazuh-helm
+        namespace: flux-system
+      interval: 30m
+
+  # "minimal-ish" homelab defaults: 1 indexer, 1 dashboard, 1 master, 1 worker
+  values:
+    indexer:
+      replicas: 1
+      persistence:
+        enabled: true
+        storageClass: longhorn
+        size: 50Gi
+
+    dashboard:
+      replicas: 1
+
+      # (valgfritt) Ingress til dashboard - juster host + ingressClassName etter oppsettet ditt
+      ingress:
+        enabled: true
+        ingressClassName: traefik-internal
+        hosts:
+          - host: wazuh.local.net
+            paths:
+              - path: /
+                pathType: Prefix
+
+    wazuh:
+      master:
+        replicas: 1
+        persistence:
+          enabled: true
+          storageClass: longhorn
+          size: 50Gi
+
+      worker:
+        replicas: 1
+        persistence:
+          enabled: true
+          storageClass: longhorn
+          size: 50Gi

@@ -1,0 +1,10 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: wazuh-helm
+  namespace: flux-system
+spec:
+  interval: 30m
+  url: https://github.com/morgoved/wazuh-helm
+  ref:
+    branch: main

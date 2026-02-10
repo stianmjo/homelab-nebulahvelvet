@@ -7,8 +7,6 @@ resources:
   - traefik
   - metalllb
   - cert-manager
-#  - external-secrets
-#  - proton-bridge
   - uptime-kuma
   - longhorn
   - nfs-provisioner

@@ -26,10 +26,14 @@
     {
       "matchDatasources": ["docker"],
       "matchPackageNames": [
-        "ghcr.io/stianmjo/proton-bridge",
         "ghcr.io/stianmjo/hadeland-bot"
       ],
       "enabled": false
+    },
+    {
+    "matchDatasources": ["docker"],
+    "matchPackageNames": ["teamspeaksystems/teamspeak6-server"],
+    "ignoreUnstable": false
     }
   ]
 }

@@ -4,16 +4,15 @@ metadata:
   name: homarr
   namespace: homarr
 spec:
-  interval: 10m
+  interval: 30m
   chart:
     spec:
-      chart: homarr
+      chart: ./charts/homarr
       sourceRef:
-        kind: OCIRepository
-        name: homarr
+        kind: GitRepository
+        name: homarr-charts
         namespace: flux-system
-      interval: 10m
-
+      interval: 30m
   values:
 
     strategyType: Recreate

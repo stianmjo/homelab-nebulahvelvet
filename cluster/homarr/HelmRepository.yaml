@@ -1,10 +1,12 @@
-apiVersion: source.toolkit.fluxcd.io/v1beta2
-kind: OCIRepository
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
 metadata:
-  name: homarr
+  name: homarr-charts
   namespace: flux-system
 spec:
-  interval: 10m
-  url: oci://ghcr.io/homarr-labs/charts/homarr
+  interval: 30m
+  url: https://github.com/homarr-labs/charts.git
   ref:
-    semver: ">=0.0.0"
+    # pick ONE:
+    # branch: dev
+    tag: homarr-8.12.1

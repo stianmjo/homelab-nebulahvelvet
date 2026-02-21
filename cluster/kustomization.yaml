@@ -13,4 +13,4 @@ resources:
   - crafty
   - media
   - monitoring
-  - huginn
+#  - huginn

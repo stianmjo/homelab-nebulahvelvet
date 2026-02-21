@@ -1,0 +1,18 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: huginn
+  namespace: huginn
+  annotations:
+    kubernetes.io/ingress.class: traefik-external
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`nebulahvelvet.no`)
+      kind: Rule
+      services:
+        - name: huginn
+          port: 80
+  tls:
+    secretName: huginn-tls

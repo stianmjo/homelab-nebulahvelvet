@@ -16,3 +16,4 @@ resources:
   - monitoring
   - hadeland-bot
 #  - teamspeak
+  - huginn

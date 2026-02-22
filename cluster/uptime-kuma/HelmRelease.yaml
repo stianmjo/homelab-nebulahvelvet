@@ -26,7 +26,7 @@ spec:
 
     image:
       repository: louislam/uptime-kuma
-      tag: "2.1.1" # renovate: datasource=docker depName=louislam/uptime-kuma
+      tag: "2.1.3" # renovate: datasource=docker depName=louislam/uptime-kuma
       
 
     service:

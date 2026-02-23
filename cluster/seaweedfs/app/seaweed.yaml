@@ -25,6 +25,9 @@ spec:
 
     s3:
       enabled: true
+      configSecret:
+        name: seaweed-s3-config
+        key: seaweedfs_s3_config.json
 
     # Embedded filer store (må ligge på persistent storage)
     config: |

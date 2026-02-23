@@ -22,7 +22,6 @@ spec:
           args:
             - "-ip.bind=0.0.0.0"
             - "-port=8888"
-            - "-dir=/data"
             - "-master=weed-master:9333"
             - "-defaultStoreDir=/data"
           ports:

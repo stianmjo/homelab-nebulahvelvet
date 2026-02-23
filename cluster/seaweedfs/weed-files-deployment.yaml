@@ -46,7 +46,7 @@ spec:
     - metadata:
         name: data
       spec:
-        accessModes: ["ReadWriteMany"]
+        accessModes: ["ReadWriteOnce"]
         storageClassName: nfs-odin   # <-- bytt til din NFS StorageClass
         resources:
           requests:

@@ -4,3 +4,4 @@ kind: Kustomization
 
 resources:
   - seaweed.yaml
+  - pvc.yaml

@@ -17,8 +17,8 @@ spec:
         - name: s3
           # renovate: datasource=docker depName=chrislusf/seaweedfs
           image: chrislusf/seaweedfs:4.13
+          command: ["weed", "s3"]
           args:
-            - "s3"
             - "-ip=0.0.0.0"
             - "-port=8333"
             - "-filer=weed-filer:8888"

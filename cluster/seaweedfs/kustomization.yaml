@@ -1,19 +1,20 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
+
 resources:
   - namespace.yaml
 
-  - weed-master-deployment.yaml
+  - weed-master-statefulset.yaml
   - weed-master-service.yaml
 
-  - weed-volume-deployment.yaml
+  - weed-volume-statefulset.yaml
   - weed-volume-service.yaml
 
-  - weed-files-deployment.yaml
+  - weed-files-statefulset.yaml
   - weed-files-service.yaml
 
-  - weed-s3-deployment.yaml
+  - weed-s3-statefulset.yaml
   - weed-s3-service.yaml
 
   - ingressRoute.yaml

@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: weed-master
+  namespace: seaweedfs
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weed-master
+  template:
+    metadata:
+      labels:
+        app: weed-master
+    spec:
+      containers:
+        - name: master
+          # renovate: datasource=docker depName=chrislusf/seaweedfs
+          image: chrislusf/seaweedfs:4.13
+          args:
+            - "master"
+            - "-ip=0.0.0.0"
+            - "-port=9333"
+          ports:
+            - name: http
+              containerPort: 9333
+          readinessProbe:
+            httpGet:
+              path: /cluster/status
+              port: 9333
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /cluster/status
+              port: 9333
+            initialDelaySeconds: 20
+            periodSeconds: 20

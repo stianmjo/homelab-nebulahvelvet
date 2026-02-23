@@ -14,3 +14,4 @@ resources:
   - media
   - monitoring
 #  - huginn
+  - seaweedfs

@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: weed-filer
+  namespace: seaweedfs
+spec:
+  serviceName: weed-filer
+  replicas: 1
+  selector:
+    matchLabels:
+      app: weed-filer
+  template:
+    metadata:
+      labels:
+        app: weed-filer
+    spec:
+      containers:
+        - name: filer
+          # renovate: datasource=docker depName=chrislusf/seaweedfs
+          image: chrislusf/seaweedfs:4.13
+          args:
+            - "filer"
+            - "-ip=0.0.0.0"
+            - "-port=8888"
+            - "-dir=/data"
+            - "-master=weed-master:9333"
+          ports:
+            - name: http
+              containerPort: 8888
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8888
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8888
+            initialDelaySeconds: 20
+            periodSeconds: 20
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteMany"]
+        storageClassName: nfs-odin   # <-- bytt til din NFS StorageClass
+        resources:
+          requests:
+            storage: 50Gi

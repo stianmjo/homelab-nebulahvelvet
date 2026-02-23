@@ -3,8 +3,9 @@ kind: IngressRoute
 metadata:
   name: seaweed-files-internal
   namespace: seaweedfs
+  annotations:
+    kubernetes.io/ingress.class: traefik-internal
 spec:
-  ingressClassName: traefik-internal
   entryPoints:
     - web
   routes:
@@ -19,8 +20,9 @@ kind: IngressRoute
 metadata:
   name: seaweed-s3-internal
   namespace: seaweedfs
+  annotations:
+    kubernetes.io/ingress.class: traefik-internal
 spec:
-  ingressClassName: traefik-internal
   entryPoints:
     - web
   routes:

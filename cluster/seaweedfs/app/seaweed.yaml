@@ -4,25 +4,29 @@ metadata:
   name: sw
   namespace: seaweedfs
 spec:
-  image: chrislusf/seaweedfs:4.13 # renovate: datasource=docker depName=chrislusf/seaweedfs
+  image: chrislusf/seaweedfs:4.13
+
+  # Hvor mange "disker" per volume-server (ofte 1 er ok)
+  volumeServerDiskCount: 1
 
   master:
     replicas: 1
 
   volume:
     replicas: 1
-    volumeClaimTemplate:
-      spec:
-        accessModes: ["ReadWriteOnce"]
-        storageClassName: nfs-odin
-        resources:
-          requests:
-            storage: 50Gi
+    requests:
+      storage: 50Gi
 
   filer:
     replicas: 1
+    # (CRD støtter requests her også, jf. CRD-snippet i repo)
+    requests:
+      storage: 10Gi
+
     s3:
       enabled: true
+
+    # Embedded filer store (må ligge på persistent storage)
     config: |
       [leveldb2]
       enabled = true

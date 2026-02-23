@@ -17,23 +17,10 @@
   "kubernetes": {
     "fileMatch": ["^cluster/.+\\.ya?ml$"]
   },
-
   "packageRules": [
     {
       "matchDatasources": ["docker"],
       "allowedVersions": "/^v?[0-9]+\\.[0-9]+\\.[0-9]+(\\.[0-9]+)?([-.][0-9A-Za-z]+)*$/"
-    },
-    {
-      "matchDatasources": ["docker"],
-      "matchPackageNames": [
-        "ghcr.io/stianmjo/hadeland-bot"
-      ],
-      "enabled": false
-    },
-    {
-    "matchDatasources": ["docker"],
-    "matchPackageNames": ["teamspeaksystems/teamspeak6-server"],
-    "ignoreUnstable": false
     }
   ]
 }

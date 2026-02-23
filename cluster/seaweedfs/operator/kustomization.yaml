@@ -3,6 +3,5 @@ kind: Kustomization
 
 
 resources:
-  - namespace.yaml
-  - operator
-#  - app
+  - HelmRepository.yaml
+  - HelmRelease

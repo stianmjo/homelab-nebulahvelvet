@@ -1,0 +1,19 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: seaweed-internal
+  namespace: seaweedfs
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`files.local.net`)
+      kind: Rule
+      services:
+        - name: sw-filer  # <-- bytt til faktisk service
+          port: 8888
+    - match: Host(`s3.local.net`)
+      kind: Rule
+      services:
+        - name: sw-s3     # <-- bytt til faktisk service
+          port: 8333

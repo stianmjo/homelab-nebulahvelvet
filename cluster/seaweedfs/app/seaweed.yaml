@@ -1,0 +1,29 @@
+apiVersion: seaweed.seaweedfs.com/v1
+kind: Seaweed
+metadata:
+  name: sw
+  namespace: seaweedfs
+spec:
+  image: chrislusf/seaweedfs:4.13 # renovate: datasource=docker depName=chrislusf/seaweedfs
+
+  master:
+    replicas: 1
+
+  volume:
+    replicas: 1
+    volumeClaimTemplate:
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: nfs-odin
+        resources:
+          requests:
+            storage: 50Gi
+
+  filer:
+    replicas: 1
+    s3:
+      enabled: true
+    config: |
+      [leveldb2]
+      enabled = true
+      dir = "/data/filerldb2"

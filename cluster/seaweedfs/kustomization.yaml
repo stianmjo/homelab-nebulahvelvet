@@ -4,17 +4,3 @@ kind: Kustomization
 
 resources:
   - namespace.yaml
-
-  - weed-master-deployment.yaml
-  - weed-master-service.yaml
-
-  - weed-volume-statefulset.yaml
-  - weed-volume-service.yaml
-
-  - weed-files-statefulset.yaml
-  - weed-files-service.yaml
-
-  - weed-s3-deployment.yaml
-  - weed-s3-service.yaml
-
-  - ingressRoute.yaml

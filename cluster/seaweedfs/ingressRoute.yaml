@@ -4,6 +4,7 @@ metadata:
   name: seaweed-files-internal
   namespace: seaweedfs
 spec:
+  ingressClassName: traefik-internal
   entryPoints:
     - web
   routes:
@@ -19,6 +20,7 @@ metadata:
   name: seaweed-s3-internal
   namespace: seaweedfs
 spec:
+  ingressClassName: traefik-internal
   entryPoints:
     - web
   routes:

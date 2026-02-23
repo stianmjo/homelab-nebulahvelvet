@@ -19,8 +19,8 @@ spec:
           image: chrislusf/seaweedfs:4.13
           command: ["weed", "s3"]
           args:
-            - "-ip=0.0.0.0"
-            - "-port=8333"
+            - "-ip.bind=0.0.0.0"
+            - "-s3.port=8333"
             - "-filer=weed-filer:8888"
           ports:
             - name: http

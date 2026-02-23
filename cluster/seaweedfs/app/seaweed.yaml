@@ -25,7 +25,7 @@ spec:
       storageClassName: nfs-odin
       resources:
         requests:
-          storage: 10Gi
+          storage: 50Gi
 
     s3:
       enabled: true
@@ -34,6 +34,9 @@ spec:
         key: seaweedfs_s3_config.json
 
     config: |
+      [filer.options]
+      buckets_folder = "/data/buckets"
+
       [leveldb2]
       enabled = true
       dir = "/data/filerldb2"

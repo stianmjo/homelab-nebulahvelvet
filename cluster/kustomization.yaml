@@ -14,3 +14,4 @@ resources:
   - monitoring
 #  - huginn
   - seaweedfs
+  - crafty

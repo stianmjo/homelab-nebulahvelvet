@@ -4,7 +4,7 @@ metadata:
   name: renovate
   namespace: renovate
 spec:
-  schedule: "0 21 * * *"   # hver kveld kl2100
+  schedule: "0 21 * * *"
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 2
   failedJobsHistoryLimit: 2
@@ -18,6 +18,13 @@ spec:
           containers:
             - name: renovate
               image: ghcr.io/renovatebot/renovate:43.48.3
+              resources:
+                requests:
+                  memory: "512Mi"
+                  cpu: "500m"
+                limits:
+                  memory: "1Gi"
+                  cpu: "1000m"
               args:
                 - "stianmjo/homelab-nebulahvelvet"
               env:
@@ -35,4 +42,9 @@ spec:
                 - name: RENOVATE_TIMEZONE
                   value: Europe/Oslo
                 - name: LOG_LEVEL
-                  value: debug
+                  value: info
+                
+                - name: RENOVATE_CONCURRENT_REQUESTS
+                  value: "10"
+                - name: RENOVATE_HTTP_CACHE
+                  value: "true"

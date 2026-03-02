@@ -6,21 +6,63 @@
     ":timezone(Europe/Oslo)",
     ":ignoreUnstable"
   ],
-
   "dependencyDashboard": false,
-
-  "enabledManagers": ["flux", "kubernetes"],
-
+  "enabledManagers": [
+    "flux",
+    "kubernetes",
+    "regex"
+  ],
   "flux": {
-    "fileMatch": ["^cluster/.+\\.ya?ml$"]
+    "fileMatch": [
+      "^cluster/.+\\.ya?ml$"
+    ]
   },
   "kubernetes": {
-    "fileMatch": ["^cluster/.+\\.ya?ml$"]
+    "fileMatch": [
+      "^cluster/.+\\.ya?ml$"
+    ]
+  },
+  "regex": {
+    "fileMatch": [
+      "^cluster/.+\\.ya?ml$"
+    ],
+    "matchStrings": [
+      "# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>[^\\s]+)(?:\\s+versioning=(?<versioning>[a-z-]+))?\\s+.*?['\"]?(?<currentValue>[^'\"\\s]+)['\"]?",
+      "# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>[^\\s]+)(?:\\s+versioning=(?<versioning>[a-z-]+))?\\s*\\n\\s+.*?['\"]?(?<currentValue>[^'\"\\s]+)['\"]?"
+    ],
+    "versioningTemplate": "{{#if versioning}}{{versioning}}{{else}}semver{{/if}}"
   },
   "packageRules": [
     {
-      "matchDatasources": ["docker"],
-      "allowedVersions": "/^v?[0-9]+\\.[0-9]+\\.[0-9]+(\\.[0-9]+)?([-.][0-9A-Za-z]+)*$/"
+      "matchDatasources": [
+        "docker"
+      ],
+      "allowedVersions": "/^v?[0-9]+\\.[0-9]+\\.[0-9]+(\\.[0-9]+)?([-.][0-9A-Za-z]+)*$/",
+      "groupName": "Docker Images"
+    },
+    {
+      "matchDatasources": [
+        "helm"
+      ],
+      "groupName": "Helm Charts",
+      "separateMinorPatch": true
+    },
+    {
+      "matchDatasources": [
+        "github-tags"
+      ],
+      "groupName": "GitHub Releases"
+    },
+    {
+      "matchDatasources": [
+        "regex"
+      ],
+      "groupName": "Custom Dependencies"
     }
+  ],
+  "prConcurrentLimit": 2,
+  "prHourlyLimit": 2,
+  "schedule": [
+    "at any time"
   ]
 }

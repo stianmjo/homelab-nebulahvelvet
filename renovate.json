@@ -10,7 +10,7 @@
   "enabledManagers": [
     "flux",
     "kubernetes",
-    "regex"
+    "custom.regex"
   ],
   "flux": {
     "fileMatch": [
@@ -22,16 +22,18 @@
       "^cluster/.+\\.ya?ml$"
     ]
   },
-  "regex": {
-    "fileMatch": [
-      "^cluster/.+\\.ya?ml$"
-    ],
-    "matchStrings": [
-      "# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>[^\\s]+)(?:\\s+versioning=(?<versioning>[a-z-]+))?\\s+.*?['\"]?(?<currentValue>[^'\"\\s]+)['\"]?",
-      "# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>[^\\s]+)(?:\\s+versioning=(?<versioning>[a-z-]+))?\\s*\\n\\s+.*?['\"]?(?<currentValue>[^'\"\\s]+)['\"]?"
-    ],
-    "versioningTemplate": "{{#if versioning}}{{versioning}}{{else}}semver{{/if}}"
-  },
+  "customManagers": [
+    {
+      "managerFilePatterns": [
+        "^cluster/.+\\.ya?ml$"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>[^\\s]+)(?:\\s+versioning=(?<versioning>[a-z-]+))?\\s+.*?['\"]?(?<currentValue>[^'\"\\s]+)['\"]?",
+        "# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>[^\\s]+)(?:\\s+versioning=(?<versioning>[a-z-]+))?\\s*\\n\\s+.*?['\"]?(?<currentValue>[^'\"\\s]+)['\"]?"
+      ],
+      "versioningTemplate": "{{#if versioning}}{{versioning}}{{else}}semver{{/if}}"
+    }
+  ],
   "packageRules": [
     {
       "matchDatasources": [
@@ -55,9 +57,12 @@
     },
     {
       "matchDatasources": [
-        "regex"
+        "docker"
       ],
-      "groupName": "Custom Dependencies"
+      "matchPackageNames": [
+        "ghcr.io/stianmjo/huginn"
+      ],
+      "enabled": false
     }
   ],
   "prConcurrentLimit": 2,

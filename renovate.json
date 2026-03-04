@@ -1,12 +1,11 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended",
-    "docker:enableMajor",
-    ":timezone(Europe/Oslo)",
-    ":ignoreUnstable"
+  "config:recommended",
+  "docker:enableMajor",
+  ":timezone(Europe/Oslo)",
+  ":ignoreUnstable"
   ],
-  "gitAuthor": "Renovate Bot <renovate@nebulahvelvet.no>",
   "dependencyDashboard": false,
   "enabledManagers": [
     "flux",

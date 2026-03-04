@@ -216,4 +216,4 @@ spec:
             metadata:
               name: craftycontroller-minecraft
             spec:
-              externalTrafficPolicy: Local
+              externalTrafficPolicy: Cluster

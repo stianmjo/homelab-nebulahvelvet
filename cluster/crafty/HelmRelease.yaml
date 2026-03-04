@@ -31,9 +31,8 @@ spec:
     replicas: 1 # Should always be 1
 
     image:
-      repository: registry.gitlab.com/crafty-controller/crafty-4
-      pullPolicy: IfNotPresent
-      tag: "4.9.0" # renovate: datasource=docker depName=registry.gitlab.com/crafty-controller/crafty-4
+      repository: arcadiatechnology/crafty-4
+      tag: "4.9.0" # renovate: datasource=docker depName=arcadiatechnology/crafty-4
 
     imagePullSecrets: []
     nameOverride: ''

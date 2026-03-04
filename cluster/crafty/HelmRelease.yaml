@@ -33,7 +33,7 @@ spec:
     image:
       repository: registry.gitlab.com/crafty-controller/crafty-4
       pullPolicy: IfNotPresent
-      tag: "4.9.0" # renovate: datasource=docker depName=registry.gitlab.com/crafty-controller/crafty-4
+      tag: "4.10.0" # renovate: datasource=docker depName=registry.gitlab.com/crafty-controller/crafty-4
 
     imagePullSecrets: []
     nameOverride: ''

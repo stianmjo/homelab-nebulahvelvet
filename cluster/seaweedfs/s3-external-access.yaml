@@ -1,0 +1,56 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: s3-friend-allowlist
+  namespace: traefik-external
+spec:
+  ipAllowList:
+    sourceRange:
+      - #
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: s3-friend-chain
+  namespace: traefik-external
+spec:
+  chain:
+    middlewares:
+      - name: s3-friend-allowlist
+      - name: public-ratelimit
+      - name: public-inflight
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: seaweed-s3-external-cert40
+  namespace: seaweedfs
+spec:
+  secretName: seaweed-s3-external-tls
+  dnsNames:
+    - s3.nebulahvelvet.no
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt-domeneshop
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: seaweed-s3-external
+  namespace: seaweedfs
+  annotations:
+    kubernetes.io/ingress.class: traefik-external
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`s3.nebulahvelvet.no`)
+      kind: Rule
+      middlewares:
+        - name: s3-friend-chain
+          namespace: traefik-external
+      services:
+        - name: sw-filer
+          port: 8333
+  tls:
+    secretName: seaweed-s3-external-tls

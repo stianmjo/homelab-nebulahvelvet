@@ -6,6 +6,8 @@ metadata:
 spec:
   schedule: "0 21 * * *"
   concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
   jobTemplate:
     spec:
       template:
@@ -21,8 +23,14 @@ spec:
                 - sh
                 - -c
                 - |
-                  pg_dump -h authentik-postgres-rw.authentik.svc.cluster.local \
-                    -U authentik authentik | gzip > /backup/dump.sql.gz
+                  set -ex
+                  echo "[$(date)] === Starting backup job ==="
+                  echo "[$(date)] Connecting to authentik-postgres-rw.authentik.svc.cluster.local as user 'authentik'"
+                  pg_isready -h authentik-postgres-rw.authentik.svc.cluster.local -U authentik -d authentik
+                  echo "[$(date)] Connection successful, initiating dump transfer"
+                  pg_dump -v -h authentik-postgres-rw.authentik.svc.cluster.local \
+                    -U authentik authentik 2>&1 | gzip > /backup/dump.sql.gz
+                  echo "[$(date)] Dump complete, compressed size: $(du -sh /backup/dump.sql.gz | cut -f1)"
               env:
                 - name: PGPASSWORD
                   valueFrom:
@@ -39,16 +47,25 @@ spec:
                 - sh
                 - -c
                 - |
+                  set -ex
+                  FILENAME="$(date +%Y%m%d).sql.gz"
+                  echo "[$(date)] === Starting upload ==="
+                  echo "[$(date)] Target: s3://authentik-postgres/dumps/$FILENAME"
+                  echo "[$(date)] File size: $(du -sh /backup/dump.sql.gz | cut -f1)"
                   aws s3 cp /backup/dump.sql.gz \
-                    "s3://authentik-postgres/dumps/$(date +%Y%m%d).sql.gz" \
+                    "s3://authentik-postgres/dumps/$FILENAME" \
                     --endpoint-url http://s3.local.net
+                  echo "[$(date)] Upload complete: s3://authentik-postgres/dumps/$FILENAME"
+                  echo "[$(date)] Running retention cleanup (keeping last 3 days)..."
                   aws s3 ls s3://authentik-postgres/dumps/ --endpoint-url http://s3.local.net | \
                     awk '{print $4}' | while read key; do
-                      date=$(echo "$key" | grep -oP '\d{8}')
-                      if [ -n "$date" ] && [ "$(date -d "$date" +%s)" -lt "$(date -d '3 days ago' +%s)" ]; then
+                      filedate=$(echo "$key" | grep -oP '\d{8}')
+                      if [ -n "$filedate" ] && [ "$(date -d "$filedate" +%s)" -lt "$(date -d '3 days ago' +%s)" ]; then
+                        echo "[$(date)] Deleting old dump: $key"
                         aws s3 rm "s3://authentik-postgres/dumps/$key" --endpoint-url http://s3.local.net
                       fi
                     done
+                  echo "[$(date)] === Backup job complete ==="
               env:
                 - name: AWS_ACCESS_KEY_ID
                   valueFrom:

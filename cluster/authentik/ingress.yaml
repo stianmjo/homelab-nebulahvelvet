@@ -24,3 +24,24 @@ spec:
     - hosts:
         - auth.nebulahvelvet.no
       secretName: authentik-tls
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: authentik-internal
+  namespace: authentik
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  ingressClassName: traefik-internal
+  rules:
+    - host: auth.local.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: authentik-server
+                port:
+                  number: 80

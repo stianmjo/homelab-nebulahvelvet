@@ -79,3 +79,7 @@ spec:
               key: password
         - name: AUTHENTIK_EMAIL__FROM
           value: "Authentik <noreply@nebulahvelvet.no>"
+        - name: AUTHENTIK_STORAGE__MEDIA__BACKEND
+          value: "file"
+        - name: AUTHENTIK_STORAGE__MEDIA__FILE__PATH
+          value: "/media"

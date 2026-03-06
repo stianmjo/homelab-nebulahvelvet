@@ -3,9 +3,9 @@ kind: Kustomization
 
 resources:
   - HelmRepository.yaml
-  - HelmRelease.yaml
+#  - HelmRelease.yaml
   - postgres-cluster.yaml
-  - scheduled-backup.yaml
-  - media-pvc.yaml
-  - ingress.yaml
-  - middleware.yaml
+#  - scheduled-backup.yaml
+#  - media-pvc.yaml
+#  - ingress.yaml
+#  - middleware.yaml

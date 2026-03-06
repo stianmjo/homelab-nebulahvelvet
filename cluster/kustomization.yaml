@@ -16,4 +16,4 @@ resources:
   - seaweedfs
   - crafty
   - cnpg
-#  - authentik
+  - authentik

@@ -1,0 +1,59 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: authentik
+  namespace: authentik
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: authentik
+      version: "2025.x.x" # renovate: datasource=helm registryUrl=https://charts.goauthentik.io depName=authentik
+      sourceRef:
+        kind: HelmRepository
+        name: authentik
+        namespace: flux-system
+      interval: 1h
+  dependsOn:
+    - name: cloudnative-pg
+      namespace: cnpg-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    authentik:
+      postgresql:
+        host: authentik-postgres-rw.authentik.svc.cluster.local
+        name: authentik
+        user: authentik
+
+    postgresql:
+      enabled: false
+
+    valkey:
+      enabled: true
+
+    global:
+      volumes:
+        - name: media
+          persistentVolumeClaim:
+            claimName: authentik-media
+      volumeMounts:
+        - name: media
+          mountPath: /media
+      env:
+        - name: AUTHENTIK_POSTGRESQL__PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: authentik-secret
+              key: AUTHENTIK_POSTGRESQL__PASSWORD
+        - name: AUTHENTIK_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: authentik-secret
+              key: secret-key
+        - name: TZ
+          value: Europe/Oslo

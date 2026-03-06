@@ -15,3 +15,5 @@ resources:
 #  - huginn
   - seaweedfs
   - crafty
+  - cnpg
+#  - authentik

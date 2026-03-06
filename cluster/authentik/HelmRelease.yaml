@@ -30,6 +30,12 @@ spec:
         name: authentik
         user: authentik
 
+    server:
+      replicas: 2
+
+    worker:
+      replicas: 2
+
     postgresql:
       enabled: false
 

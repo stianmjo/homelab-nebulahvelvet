@@ -14,6 +14,7 @@ GitOps repository for a self-hosted Kubernetes homelab cluster, managed with Flu
 | Object Storage | [SeaweedFS](https://github.com/seaweedfs/seaweedfs) |
 | NFS Storage | nfs-subdir-external-provisioner |
 | Monitoring | VictoriaMetrics · Grafana · Alloy · node-exporter |
+| Identity / SSO | [Authentik](https://goauthentik.io) + CloudNativePG (Traefik ForwardAuth) |
 | Notifications | Flux → Discord |
 | Updates | [Renovate](https://docs.renovatebot.com) (self-hosted) |
 
@@ -25,6 +26,7 @@ GitOps repository for a self-hosted Kubernetes homelab cluster, managed with Flu
 | Gaming | Crafty (Minecraft server manager) |
 | Monitoring | Uptime Kuma |
 | CI/CD | GitHub Actions self-hosted runners |
+| Identity | Authentik |
 
 ## Repository structure
 
@@ -41,6 +43,8 @@ cluster/
 ├── media/              # Media stack (Jellyfin, *arr, qBittorrent)
 ├── crafty/             # Minecraft server manager
 ├── uptime-kuma/        # Uptime monitoring
+├── cnpg/               # CloudNativePG operator
+├── authentik/          # SSO / identity provider (ForwardAuth for Traefik)
 ├── renovate/           # Dependency update automation
 └── github-runner/      # Self-hosted GitHub Actions runners
 ```

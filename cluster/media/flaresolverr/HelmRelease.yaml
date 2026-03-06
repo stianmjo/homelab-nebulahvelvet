@@ -1,7 +1,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: flaresolverr
+  name: prowlarr
   namespace: media
 spec:
   interval: 30m
@@ -18,21 +18,24 @@ spec:
 
   values:
     controllers:
-      flaresolverr:
+      prowlarr:
         replicas: 1
         strategy: Recreate
-
+        
+        pod:
+          securityContext:
+            fsGroup: 1000
+            fsGroupChangePolicy: OnRootMismatch
         containers:
           app:
             image:
-              repository: ghcr.io/flaresolverr/flaresolverr
-              # renovate: datasource=docker depName=ghcr.io/flaresolverr/flaresolverr
-              tag: "v3.4.5"
+              repository: lscr.io/linuxserver/prowlarr
+              # renovate: datasource=docker depName=lscr.io/linuxserver/prowlarr
+              tag: 2.3.0
             env:
               TZ: Europe/Oslo
-              LOG_LEVEL: info
-              LOG_HTML: "false"
-              CAPTCHA_SOLVER: none
+              PUID: "1000"
+              PGID: "1000"
             resources:
               requests:
                 cpu: 100m
@@ -43,10 +46,10 @@ spec:
 
     service:
       app:
-        controller: flaresolverr
+        controller: prowlarr
         ports:
           http:
-            port: 8191
+            port: 9696
 
     ingress:
       app:
@@ -55,10 +58,17 @@ spec:
         annotations:
           traefik.ingress.kubernetes.io/router.entrypoints: web
         hosts:
-          - host: flaresolverr.local.net
+          - host: prowlarr.local.net
             paths:
               - path: /
                 pathType: Prefix
                 service:
                   identifier: app
                   port: http
+
+    persistence:
+      config:
+        enabled: true
+        existingClaim: prowlarr-config
+        globalMounts:
+          - path: /config

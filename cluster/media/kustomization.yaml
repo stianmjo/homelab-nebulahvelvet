@@ -11,3 +11,5 @@ resources:
   - radarr
   - bazarr
   - jellyseerr
+  - flaresolverr
+  

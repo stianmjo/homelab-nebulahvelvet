@@ -57,3 +57,25 @@ spec:
               key: secret-key
         - name: TZ
           value: Europe/Oslo
+        - name: AUTHENTIK_EMAIL__HOST
+          value: smtp.protonmail.ch
+        - name: AUTHENTIK_EMAIL__PORT
+          value: "587"
+        - name: AUTHENTIK_EMAIL__USE_TLS
+          value: "true"
+        - name: AUTHENTIK_EMAIL__USE_SSL
+          value: "false"
+        - name: AUTHENTIK_EMAIL__TIMEOUT
+          value: "30"
+        - name: AUTHENTIK_EMAIL__USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: authentik-smtp-secret
+              key: username
+        - name: AUTHENTIK_EMAIL__PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: authentik-smtp-secret
+              key: password
+        - name: AUTHENTIK_EMAIL__FROM
+          value: "Authentik <noreply@nebulahvelvet.no>"

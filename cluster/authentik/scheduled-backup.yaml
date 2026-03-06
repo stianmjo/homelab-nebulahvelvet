@@ -4,8 +4,7 @@ metadata:
   name: authentik-postgres-daily
   namespace: authentik
 spec:
-  schedule: "0 21 * * *"
-  timeZone: "Europe/Oslo"
+  schedule: "0 20 * * *" # 21:00 Europe/Oslo (UTC+1)
   backupOwnerReference: self
   cluster:
     name: authentik-postgres

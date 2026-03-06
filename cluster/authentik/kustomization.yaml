@@ -5,7 +5,7 @@ resources:
   - HelmRepository.yaml
   - HelmRelease.yaml
   - postgres-cluster.yaml
-  - scheduled-backup.yaml
+  - postgres-backup-cronjob.yaml
   - media-pvc.yaml
   - ingress.yaml
   - middleware.yaml

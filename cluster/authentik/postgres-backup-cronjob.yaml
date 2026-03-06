@@ -23,7 +23,7 @@ spec:
                 - sh
                 - -c
                 - |
-                  set -ex
+                  set -e
                   echo "[$(date)] === Starting backup job ==="
                   echo "[$(date)] Connecting to authentik-postgres-rw.authentik.svc.cluster.local as user 'authentik'"
                   pg_isready -h authentik-postgres-rw.authentik.svc.cluster.local -U authentik -d authentik
@@ -47,7 +47,7 @@ spec:
                 - sh
                 - -c
                 - |
-                  set -ex
+                  set -e
                   FILENAME="$(date +%Y%m%d).sql.gz"
                   echo "[$(date)] === Starting upload ==="
                   echo "[$(date)] Target: s3://authentik-postgres/dumps/$FILENAME"
@@ -70,12 +70,12 @@ spec:
                 - name: AWS_ACCESS_KEY_ID
                   valueFrom:
                     secretKeyRef:
-                      name: authentik-postgres-backup-secret
+                      name: authentik-s3-credentials
                       key: ACCESS_KEY_ID
                 - name: AWS_SECRET_ACCESS_KEY
                   valueFrom:
                     secretKeyRef:
-                      name: authentik-postgres-backup-secret
+                      name: authentik-s3-credentials
                       key: SECRET_ACCESS_KEY
                 - name: AWS_DEFAULT_REGION
                   value: us-east-1

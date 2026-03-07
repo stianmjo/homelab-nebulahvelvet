@@ -1,6 +1,17 @@
 # homelab-nebulahvelvet
 
-GitOps repository for a self-hosted Kubernetes homelab cluster, managed with Flux CD v2.
+<div align="center">
+
+![Flux](https://img.shields.io/badge/GitOps-Flux_v2-5468FF?style=for-the-badge&logo=flux&logoColor=white)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-K3s-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white)
+![Traefik](https://img.shields.io/badge/Ingress-Traefik-24A1C1?style=for-the-badge&logo=traefikproxy&logoColor=white)
+![Renovate](https://img.shields.io/badge/Updates-Renovate-1A1F6C?style=for-the-badge&logo=renovate&logoColor=white)
+
+*A self-hosted Kubernetes homelab managed with GitOps principles.*
+
+</div>
+
+---
 
 ## Stack
 
@@ -13,22 +24,26 @@ GitOps repository for a self-hosted Kubernetes homelab cluster, managed with Flu
 | Block Storage | [Longhorn](https://longhorn.io) |
 | Object Storage | [SeaweedFS](https://github.com/seaweedfs/seaweedfs) |
 | NFS Storage | nfs-subdir-external-provisioner |
-| Monitoring | VictoriaMetrics · Grafana · Alloy · node-exporter |
 | Identity / SSO | [Authentik](https://goauthentik.io) + CloudNativePG (Traefik ForwardAuth) |
 | Notifications | Flux → Discord |
 | Updates | [Renovate](https://docs.renovatebot.com) (self-hosted) |
+
+---
 
 ## Applications
 
 | Category | App |
 |---|---|
+| Personal Site | [Huginn](https://nebulahvelvet.no) — personal Next.js webpage |
 | Media | Jellyfin, Sonarr, Radarr, Bazarr, Prowlarr, qBittorrent (VPN), Jellyseerr |
 | Gaming | Crafty (Minecraft server manager) |
 | Monitoring | Uptime Kuma |
 | CI/CD | GitHub Actions self-hosted runners |
 | Identity | Authentik |
 
-## Repository structure
+---
+
+## Repository Structure
 
 ```
 cluster/
@@ -39,7 +54,7 @@ cluster/
 ├── longhorn/           # Block storage + S3 backup
 ├── nfs-provisioner/    # NFS-backed dynamic PVC provisioner
 ├── seaweedfs/          # S3-compatible object store
-├── monitoring/         # VictoriaMetrics, Grafana, node-exporter
+├── huginn/             # Personal Next.js website (nebulahvelvet.no)
 ├── media/              # Media stack (Jellyfin, *arr, qBittorrent)
 ├── crafty/             # Minecraft server manager
 ├── uptime-kuma/        # Uptime monitoring
@@ -48,6 +63,8 @@ cluster/
 ├── renovate/           # Dependency update automation
 └── github-runner/      # Self-hosted GitHub Actions runners
 ```
+
+---
 
 ## Secrets
 

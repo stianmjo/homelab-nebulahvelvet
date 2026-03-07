@@ -47,14 +47,9 @@ spec:
         - name: media
           persistentVolumeClaim:
             claimName: authentik-media
-        - name: email-templates
-          configMap:
-            name: authentik-templates
       volumeMounts:
         - name: media
           mountPath: /media
-        - name: email-templates
-          mountPath: /templates
       env:
         - name: AUTHENTIK_POSTGRESQL__PASSWORD
           valueFrom:

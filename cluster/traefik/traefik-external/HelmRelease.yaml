@@ -94,27 +94,6 @@ spec:
         exposedPort: 9100
         protocol: TCP
     
-    metrics:
-      prometheus:
-        enabled: true
-        entryPoint: metrics
-        addEntryPointsLabels: true
-        addRoutersLabels: true
-        addServicesLabels: true
-        serviceMonitor:
-          enabled: true
-          interval: 30s
-          additionalLabels:
-            release: monitoring
-
-    logs:
-      access:
-        enabled: true
-        format: json
-        fields:
-          headers:
-            defaultMode: drop
-
     ingressRoute:
       dashboard:
         enabled: false

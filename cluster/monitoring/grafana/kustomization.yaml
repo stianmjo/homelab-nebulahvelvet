@@ -7,5 +7,4 @@ resources:
   - HelmRelease-alloy.yaml
   - HelmRelease-loki.yaml
   - HelmRelease-promtail.yaml
-  - pvc-geoip.yaml
   - ingress.yaml

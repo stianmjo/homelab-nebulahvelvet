@@ -9,3 +9,5 @@ resources:
   - media-pvc.yaml
   - ingress.yaml
   - middleware.yaml
+  - email-template-configmap.yaml
+

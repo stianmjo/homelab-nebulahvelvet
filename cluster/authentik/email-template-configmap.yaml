@@ -8,7 +8,7 @@ data:
     {% extends "email/base.html" %}
     {% load i18n %}
     {% load humanize %}
-    {% block logo_url %}https://auth.nebulahvelvet.no/media/public/logo-transparent.svg{% endblock %}
+    {% block logo_url %}https://auth.nebulahvelvet.no/media/public/logo-transparent.png{% endblock %}
     {% block content %}
     <tr>
       <td align="center">
@@ -50,7 +50,7 @@ data:
   event_notification.html: |
     {% extends "email/base.html" %}
       {% load i18n %}
-      {% block logo_url %}https://auth.nebulahvelvet.no/media/public/logo-transparent.svg{% endblock %}
+      {% block logo_url %}https://auth.nebulahvelvet.no/media/public/logo-transparent.png{% endblock %}
       {% block content %}
       <tr>
         <td align="center">

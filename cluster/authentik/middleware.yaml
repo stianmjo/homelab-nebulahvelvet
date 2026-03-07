@@ -59,6 +59,7 @@ metadata:
 spec:
   chain:
     middlewares:
+      - name: public-botwrangler
       - name: authentik-headers
       - name: authentik-ratelimit
       - name: authentik-inflight

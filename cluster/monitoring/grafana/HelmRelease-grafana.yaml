@@ -30,6 +30,35 @@ spec:
       type: ClusterIP
       port: 80
 
+    grafana.ini:
+      plugin.grafana-geomap-panel:
+        enable_geoip: true
+        geoip_db_path: /var/lib/grafana/geoip/GeoLite2-City.mmdb
+
+    extraInitContainers:
+      - name: extract-geoip
+        image: busybox:1.36
+        command:
+          - sh
+          - -c
+          - |
+            if [ ! -f /geoip/GeoLite2-City.mmdb ]; then
+              tar -xzf /geoip/GeoLite2-City*.tar.gz -C /geoip --strip-components=1
+            fi
+        volumeMounts:
+          - name: geoip
+            mountPath: /geoip
+
+    extraVolumes:
+      - name: geoip
+        persistentVolumeClaim:
+          claimName: grafana-geoip
+
+    extraVolumeMounts:
+      - name: geoip
+        mountPath: /var/lib/grafana/geoip
+        readOnly: true
+
     datasources:
       datasources.yaml:
         apiVersion: 1

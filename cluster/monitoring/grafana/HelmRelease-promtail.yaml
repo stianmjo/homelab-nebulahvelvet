@@ -70,6 +70,7 @@ spec:
               - labels:
                   status: OriginStatus
                   method: RequestMethod
+                  client_ip: ClientHost    # promoted to label for GeoMap lookup
             relabel_configs:
               - source_labels: [__meta_kubernetes_pod_node_name]
                 target_label: __host__

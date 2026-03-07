@@ -20,33 +20,20 @@ spec:
         - url: http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push
 
       snippets:
-        # Default pipeline: parse CRI log format from all pods
         pipelineStages:
           - cri: {}
 
-        # Override scrape configs to add Traefik JSON access log parsing
         scrapeConfigs: |
+          # All pods except traefik-external (handled separately)
           - job_name: kubernetes-pods
             kubernetes_sd_configs:
               - role: pod
             pipeline_stages:
               - cri: {}
-              - match:
-                  selector: '{app_kubernetes_io_name="traefik"}'
-                  stages:
-                    - json:
-                        expressions:
-                          client_ip: ClientHost
-                          status:    OriginStatus
-                          router:    RouterName
-                          method:    RequestMethod
-                          path:      RequestPath
-                    - labels:
-                        client_ip:
-                        status:
-                        router:
-                        method:
             relabel_configs:
+              - source_labels: [__meta_kubernetes_namespace]
+                action: drop
+                regex: traefik-external
               - source_labels: [__meta_kubernetes_pod_node_name]
                 target_label: __host__
               - action: labelmap
@@ -57,6 +44,41 @@ spec:
                 target_label: pod
               - source_labels: [__meta_kubernetes_pod_container_name]
                 target_label: container
+              - replacement: /var/log/pods/*$1/*.log
+                separator: /
+                source_labels:
+                  - __meta_kubernetes_pod_uid
+                  - __meta_kubernetes_pod_container_name
+                target_label: __path__
+
+          # Traefik external — JSON access log parsing, job="traefik"
+          - job_name: traefik
+            kubernetes_sd_configs:
+              - role: pod
+                namespaces:
+                  names: [traefik-external]
+            pipeline_stages:
+              - cri: {}
+              - json:
+                  expressions:
+                    ClientHost: ClientHost
+                    OriginStatus: OriginStatus
+                    RouterName: RouterName
+                    RequestMethod: RequestMethod
+                    RequestPath: RequestPath
+                    Duration: Duration
+              - labels:
+                  status: OriginStatus
+                  method: RequestMethod
+            relabel_configs:
+              - source_labels: [__meta_kubernetes_pod_node_name]
+                target_label: __host__
+              - source_labels: [__meta_kubernetes_namespace]
+                target_label: namespace
+              - source_labels: [__meta_kubernetes_pod_name]
+                target_label: pod
+              - target_label: job
+                replacement: traefik
               - replacement: /var/log/pods/*$1/*.log
                 separator: /
                 source_labels:

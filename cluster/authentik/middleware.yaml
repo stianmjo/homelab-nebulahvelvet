@@ -19,3 +19,46 @@ spec:
       - X-authentik-meta-provider
       - X-authentik-meta-app
       - X-authentik-meta-version
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: authentik-headers
+  namespace: traefik-external
+spec:
+  headers:
+    customRequestHeaders:
+      X-Forwarded-Proto: "https"
+    customResponseHeaders:
+      X-Frame-Options: "SAMEORIGIN"
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: authentik-ratelimit
+  namespace: traefik-external
+spec:
+  rateLimit:
+    average: 100
+    burst: 200
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: authentik-inflight
+  namespace: traefik-external
+spec:
+  inFlightReq:
+    amount: 100
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: authentik-chain
+  namespace: traefik-external
+spec:
+  chain:
+    middlewares:
+      - name: authentik-headers
+      - name: authentik-ratelimit
+      - name: authentik-inflight

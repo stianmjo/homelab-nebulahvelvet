@@ -107,6 +107,14 @@ spec:
           additionalLabels:
             release: monitoring
 
+    logs:
+      access:
+        enabled: true
+        format: json
+        fields:
+          headers:
+            defaultMode: drop
+
     ingressRoute:
       dashboard:
         enabled: false

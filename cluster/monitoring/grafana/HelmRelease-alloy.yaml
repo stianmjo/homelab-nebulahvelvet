@@ -79,27 +79,21 @@ spec:
             forward_to = [prometheus.remote_write.victoriametrics.receiver]
           }
 
-          discovery.kubernetes "services_traefik" {
+          discovery.kubernetes "traefik_services" {
             role = "service"
-            namespaces {
-              own_namespace = false
-              names         = ["traefik-external", "traefik-internal"]
+            selectors {
+              role  = "service"
+              label = "app.kubernetes.io/name=traefik"
             }
           }
 
           discovery.relabel "traefik_metrics_svc" {
-            targets = discovery.kubernetes.services_traefik.targets
-
-            rule {
-              action        = "keep"
-              source_labels = ["__meta_kubernetes_service_name"]
-              regex         = ".*traefik.*"
-            }
+            targets = discovery.kubernetes.traefik_services.targets
 
             rule {
               action        = "keep"
               source_labels = ["__meta_kubernetes_service_port_name"]
-              regex         = "metrics|prometheus"
+              regex         = "metrics"
             }
 
             rule {
@@ -107,6 +101,7 @@ spec:
               source_labels = ["__meta_kubernetes_namespace"]
               target_label  = "namespace"
             }
+
             rule {
               action        = "replace"
               source_labels = ["__meta_kubernetes_service_name"]

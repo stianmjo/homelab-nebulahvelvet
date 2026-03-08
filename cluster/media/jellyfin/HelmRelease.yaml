@@ -56,8 +56,6 @@ spec:
           hosts:
             - jellyfin.nebulahvelvet.no
 
-    # Resource limits remembered + set to something sane.
-    # If you hardware-transcode later, you can raise CPU/mem or add GPU device config.
     resources:
       requests:
         cpu: 500m
@@ -75,11 +73,15 @@ spec:
       periodSeconds: 10
       failureThreshold: 30
 
+    podSecurityContext:
+      supplementalGroups:
+        - 44    # video
+        - 993   # render
+
     jellyfin:
       env:
         - name: TZ
           value: Europe/Oslo
-        # Optional: explicitly define cache dir (defaults usually already /cache)
         - name: JELLYFIN_CACHE_DIR
           value: /cache
 
@@ -95,7 +97,6 @@ spec:
         enabled: true
         type: pvc
         hostPath: ""
-        # When existingClaim is set, size/accessMode/storageClass don’t matter for provisioning.
         existingClaim: media-nfs
 
       cache:
@@ -107,11 +108,16 @@ spec:
           claimName: jellyfin-cache
       - name: transcodes
         emptyDir:
-          # default = node disk (NOT RAM)
-          sizeLimit: 50Gi       # cap it (works on many clusters; enforcement can vary)
+          sizeLimit: 50Gi
+      - name: dri
+        hostPath:
+          path: /dev/dri
+          type: Directory
 
     volumeMounts:
       - name: jellyfin-cache
         mountPath: /cache
       - name: transcodes
         mountPath: /cache/transcodes
+      - name: dri
+        mountPath: /dev/dri

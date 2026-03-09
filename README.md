@@ -3,7 +3,7 @@
 <div align="center">
 
 ![Flux](https://img.shields.io/badge/GitOps-Flux_v2-5468FF?style=for-the-badge&logo=flux&logoColor=white)
-![Kubernetes](https://img.shields.io/badge/Kubernetes-K3s-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white)
+![Kubernetes](https://img.shields.io/badge/Kubernetes-K8s-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white)
 ![Traefik](https://img.shields.io/badge/Ingress-Traefik-24A1C1?style=for-the-badge&logo=traefikproxy&logoColor=white)
 ![Renovate](https://img.shields.io/badge/Updates-Renovate-1A1F6C?style=for-the-badge&logo=renovate&logoColor=white)
 

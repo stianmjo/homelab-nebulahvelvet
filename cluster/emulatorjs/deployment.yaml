@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: emulatorjs
-          image: lscr.io/linuxserver/emulatorjs:latest # renovate: datasource=docker depName=lscr.io/linuxserver/emulatorjs
+          image: lscr.io/linuxserver/emulatorjs:1.9.2-ls173
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

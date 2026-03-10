@@ -7,7 +7,6 @@ spec:
   accessModes:
     - ReadWriteMany
   storageClassName: nfs-odin
-  volumeName: dcsg2005-backup-nfs
   resources:
     requests:
       storage: 5Gi

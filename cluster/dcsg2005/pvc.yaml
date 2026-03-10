@@ -1,18 +1,4 @@
 apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: dcsg2005-backup-nfs-pv
-spec:
-  capacity:
-    storage: 100Gi
-  accessModes:
-    - ReadWriteMany
-  persistentVolumeReclaimPolicy: Retain
-  nfs:
-    server: 10.0.2.5
-    path: /var/nfs/shared/backups
----
-apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: dcsg2005-backup-nfs
@@ -20,8 +6,8 @@ metadata:
 spec:
   accessModes:
     - ReadWriteMany
-  storageClassName: ""
-  volumeName: dcsg2005-backup-nfs-pv
+  storageClassName: nfs-odin
+  volumeName: dcsg2005-backup-nfs
   resources:
     requests:
-      storage: 100Gi
+      storage: 5Gi

@@ -4,23 +4,13 @@ metadata:
   name: emulatorjs
   namespace: emulatorjs
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-domeneshop
     kubernetes.io/ingress.class: traefik-external
 spec:
   entryPoints:
     - websecure
   routes:
     - kind: Rule
-      match: Host(`games.nebulahvelvet.no`) && PathPrefix(`/outpost.goauthentik.io/`)
-      priority: 15
-      services:
-        - kind: Service
-          name: ak-outpost-authentik-embedded-outpost
-          namespace: authentik
-          port: 9000
-    - kind: Rule
       match: Host(`games.nebulahvelvet.no`)
-      priority: 10
       middlewares:
         - name: authentik-chain
           namespace: traefik-external

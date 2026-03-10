@@ -5,6 +5,7 @@ metadata:
   namespace: emulatorjs
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-domeneshop
+    kubernetes.io/ingress.class: traefik-external
 spec:
   entryPoints:
     - websecure

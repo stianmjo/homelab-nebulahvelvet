@@ -36,7 +36,7 @@ spec:
                   apk add --no-cache git openssh > /dev/null 2>&1
                   log "Dependencies installed."
 
-                  REPO_URL="https://${OVERLEAF_USER}:${OVERLEAF_PASS}@git.overleaf.com/69a818a34f812c729fd65773"
+                  REPO_URL="https://stiamjo@stud.ntnu.no:${OVERLEAF_PASS}@git.overleaf.com/69a818a34f812c729fd65773"
                   BACKUP_DIR="/backup/overleaf-dcsg2005"
 
                   if [ -d "${BACKUP_DIR}" ]; then
@@ -60,11 +60,6 @@ spec:
               env:
                 - name: TZ
                   value: Europe/Oslo
-                - name: OVERLEAF_USER
-                  valueFrom:
-                    secretKeyRef:
-                      name: git-backup-secret
-                      key: OVERLEAF_USER
                 - name: OVERLEAF_PASS
                   valueFrom:
                     secretKeyRef:

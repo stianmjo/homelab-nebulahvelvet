@@ -24,21 +24,39 @@ spec:
                 - sh
                 - -c
                 - |
-                  apk add --no-cache git openssh
+                  set -e
+
+                  log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"; }
+
+                  log "=== Overleaf Git Backup Starting ==="
+                  log "Target: git.overleaf.com/69a818a34f812c729fd65773"
+                  log "Backup dir: /backup/overleaf-dcsg2005"
+
+                  log "Installing dependencies..."
+                  apk add --no-cache git openssh > /dev/null 2>&1
+                  log "Dependencies installed."
 
                   REPO_URL="https://${OVERLEAF_USER}:${OVERLEAF_PASS}@git.overleaf.com/69a818a34f812c729fd65773"
                   BACKUP_DIR="/backup/overleaf-dcsg2005"
 
                   if [ -d "${BACKUP_DIR}" ]; then
-                    echo "Mirror exists, updating..."
+                    log "Existing mirror found — updating..."
                     git --git-dir="${BACKUP_DIR}" remote set-url origin "${REPO_URL}"
                     git --git-dir="${BACKUP_DIR}" remote update --prune
+                    log "Mirror updated successfully."
                   else
-                    echo "No mirror found, cloning..."
+                    log "No mirror found — performing initial clone..."
                     git clone --mirror "${REPO_URL}" "${BACKUP_DIR}"
+                    log "Initial clone complete."
                   fi
 
-                  echo "Backup complete."
+                  log "Verifying backup integrity..."
+                  COMMIT_COUNT=$(git --git-dir="${BACKUP_DIR}" rev-list --count --all)
+                  LATEST_COMMIT=$(git --git-dir="${BACKUP_DIR}" log --oneline -1)
+                  log "Total commits in mirror: ${COMMIT_COUNT}"
+                  log "Latest commit: ${LATEST_COMMIT}"
+
+                  log "=== Backup Completed Successfully ==="
               env:
                 - name: TZ
                   value: Europe/Oslo

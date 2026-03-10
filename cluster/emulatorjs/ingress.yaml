@@ -8,8 +8,8 @@ metadata:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.tls: "true"
     traefik.ingress.kubernetes.io/router.middlewares: >-
-      traefik-external-authentik-forward-auth@kubernetescrd,
-      traefik-external-authentik-chain@kubernetescrd
+      traefik-external-authentik-chain@kubernetescrd,
+      traefik-external-authentik-forward-auth@kubernetescrd
 spec:
   ingressClassName: traefik-external
   rules:

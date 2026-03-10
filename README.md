@@ -36,7 +36,7 @@
 |---|---|
 | Personal Site | [Huginn](https://nebulahvelvet.no) — personal Next.js webpage |
 | Media | Jellyfin, Sonarr, Radarr, Bazarr, Prowlarr, qBittorrent (VPN), Jellyseerr |
-| Gaming | Crafty (Minecraft server manager), EmulatorJS (browser-based retro emulator) |
+| Gaming | Crafty (Minecraft server manager) |
 | Monitoring | Uptime Kuma |
 | CI/CD | GitHub Actions self-hosted runners |
 | Identity | Authentik |
@@ -60,7 +60,6 @@ cluster/
 ├── uptime-kuma/        # Uptime monitoring
 ├── cnpg/               # CloudNativePG operator
 ├── authentik/          # SSO / identity provider (ForwardAuth for Traefik)
-├── emulatorjs/         # Browser-based retro emulator (games.nebulahvelvet.no, SSO-protected)
 ├── renovate/           # Dependency update automation
 └── github-runner/      # Self-hosted GitHub Actions runners
 ```

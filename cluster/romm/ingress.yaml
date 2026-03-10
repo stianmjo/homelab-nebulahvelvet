@@ -15,6 +15,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: romm-app
+                name: romm
                 port:
                   number: 8080

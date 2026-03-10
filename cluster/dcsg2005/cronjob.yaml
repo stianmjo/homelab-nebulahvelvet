@@ -1,0 +1,68 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: git-backup
+  namespace: dcsg2005
+spec:
+  schedule: "0 3 * * *"
+  timeZone: Europe/Oslo
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 86400
+      backoffLimit: 1
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: rsync
+              # renovate: datasource=docker depName=alpine
+              image: alpine:3.21
+              command:
+                - sh
+                - -c
+                - |
+                  apk add --no-cache git openssh
+
+                  REPO_URL="https://${OVERLEAF_USER}:${OVERLEAF_PASS}@git.overleaf.com/69a818a34f812c729fd65773"
+                  BACKUP_DIR="/backup/overleaf-dcsg2005"
+
+                  if [ -d "${BACKUP_DIR}" ]; then
+                    echo "Mirror exists, updating..."
+                    git --git-dir="${BACKUP_DIR}" remote set-url origin "${REPO_URL}"
+                    git --git-dir="${BACKUP_DIR}" remote update --prune
+                  else
+                    echo "No mirror found, cloning..."
+                    git clone --mirror "${REPO_URL}" "${BACKUP_DIR}"
+                  fi
+
+                  echo "Backup complete."
+              env:
+                - name: TZ
+                  value: Europe/Oslo
+                - name: OVERLEAF_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: git-backup-secret
+                      key: OVERLEAF_USER
+                - name: OVERLEAF_PASS
+                  valueFrom:
+                    secretKeyRef:
+                      name: git-backup-secret
+                      key: OVERLEAF_PASS
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+              volumeMounts:
+                - name: backup
+                  mountPath: /backup
+          volumes:
+            - name: backup
+              persistentVolumeClaim:
+                claimName: dcsg2005-backup-nfs

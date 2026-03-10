@@ -33,3 +33,15 @@ spec:
   resources:
     requests:
       storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: romm-library
+  namespace: romm
+spec:
+  accessModes: [ReadWriteMany]
+  storageClassName: nfs-odin
+  resources:
+    requests:
+      storage: 100Gi

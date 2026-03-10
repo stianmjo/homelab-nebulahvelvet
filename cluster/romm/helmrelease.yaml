@@ -88,6 +88,6 @@ spec:
         globalMounts:
           - path: /romm/config
       library:
-        existingClaim: media-nfs
+        existingClaim: romm-library
         globalMounts:
           - path: /romm/library

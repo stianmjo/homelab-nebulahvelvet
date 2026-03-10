@@ -1,0 +1,50 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: emulatorjs
+  namespace: emulatorjs
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-domeneshop
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.middlewares: >-
+      traefik-external-authentik-forward-auth@kubernetescrd,
+      traefik-external-authentik-chain@kubernetescrd
+spec:
+  ingressClassName: traefik-external
+  rules:
+    - host: games.nebulahvelvet.no
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: emulatorjs
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - games.nebulahvelvet.no
+      secretName: emulatorjs-tls
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: emulatorjs-mgmt
+  namespace: emulatorjs
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  ingressClassName: traefik-internal
+  rules:
+    - host: emulatorjs-mgmt.local.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: emulatorjs-mgmt
+                port:
+                  number: 3000

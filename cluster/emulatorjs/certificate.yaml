@@ -1,0 +1,12 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: emulatorjs-tls
+  namespace: emulatorjs
+spec:
+  secretName: emulatorjs-tls
+  issuerRef:
+    name: letsencrypt-domeneshop
+    kind: ClusterIssuer
+  dnsNames:
+    - games.nebulahvelvet.no

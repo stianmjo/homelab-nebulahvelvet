@@ -39,8 +39,6 @@ spec:
     postgresql:
       enabled: false
 
-    valkey:
-      enabled: true
 
     global:
       volumes:

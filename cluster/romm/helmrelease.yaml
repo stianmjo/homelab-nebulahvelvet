@@ -58,7 +58,7 @@ spec:
             image:
               # renovate: datasource=docker depName=valkey/valkey
               repository: valkey/valkey
-              tag: "8.1.6"
+              tag: "9.0.3"
             resources:
               requests:
                 cpu: 50m

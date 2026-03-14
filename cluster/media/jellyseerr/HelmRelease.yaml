@@ -27,7 +27,7 @@ spec:
             image:
               repository: fallenbagel/jellyseerr
               # renovate: datasource=docker depName=fallenbagel/jellyseerr
-              tag: 2.7.3
+              tag: 3.1.0
             env:
               TZ: Europe/Oslo
             resources:

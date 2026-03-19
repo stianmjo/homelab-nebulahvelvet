@@ -32,7 +32,7 @@ spec:
 
     image:
       repository: arcadiatechnology/crafty-4
-      tag: "4.10.1" # renovate: datasource=docker depName=arcadiatechnology/crafty-4
+      tag: "4.10.2" # renovate: datasource=docker depName=arcadiatechnology/crafty-4
 
     imagePullSecrets: []
     nameOverride: ''

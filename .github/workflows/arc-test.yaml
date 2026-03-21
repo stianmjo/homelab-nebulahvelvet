@@ -15,8 +15,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.RUNNER_API_TOKEN }}
         run: |
-          RUNNERS=$(gh api repos/${{ github.repository }}/actions/runners \
-            --jq '[.runners[] | select(.labels[].name == "arc-runner-set") | select(.status == "online")] | length')
+          RAW=$(gh api repos/${{ github.repository }}/actions/runners)
+          echo "Raw API response:"
+          echo "$RAW" | jq .
+          RUNNERS=$(echo "$RAW" | jq '[.runners[] | select(.labels[].name == "arc-runner-set") | select(.status == "online")] | length')
           echo "Online ARC runners: $RUNNERS"
           if [ "$RUNNERS" -gt "0" ]; then
             echo 'runner=["arc-runner-set"]' >> $GITHUB_OUTPUT
@@ -31,7 +33,6 @@ jobs:
     runs-on: ${{ fromJson(needs.determine-runner.outputs.runner) }}
     steps:
       - name: Show runner details
-        id: runner_details
         run: |
           echo "RUNNER_HOSTNAME=$(hostname)" >> $GITHUB_ENV
           echo "RUNNER_USER=$(whoami)" >> $GITHUB_ENV
@@ -46,13 +47,11 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Confirm repo contents
-        id: repo_contents
         run: |
           ls -la
           echo "GIT_VERSION=$(git --version)" >> $GITHUB_ENV
 
       - name: Quick network check
-        id: network_check
         run: |
           echo "DNS + HTTPS check:"
           DNS_RESULT=$(getent hosts github.com || nslookup github.com || echo "DNS lookup failed")
@@ -80,7 +79,8 @@ jobs:
                   { \"name\": \"User\", \"value\": \"$RUNNER_USER\", \"inline\": true },
                   { \"name\": \"Git version\", \"value\": \"$GIT_VERSION\", \"inline\": true },
                   { \"name\": \"DNS check\", \"value\": \"$DNS_RESULT\", \"inline\": false },
-                  { \"name\": \"HTTP check\", \"value\": \"$HTTP_RESULT\", \"inline\": false }
+                  { \"name\": \"HTTP check\", \"value\": \"$HTTP_RESULT\", \"inline\": false },
+                  { \"name\": \"Runner status\", \"value\": \"https://github.com/${{ github.repository }}/settings/actions/runners\", \"inline\": false }
                 ]
               }]
             }"
@@ -98,7 +98,8 @@ jobs:
                 "fields": [
                   { "name": "Workflow", "value": "${{ github.workflow }}", "inline": true },
                   { "name": "Triggered by", "value": "${{ github.actor }}", "inline": true },
-                  { "name": "Run", "value": "[#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})", "inline": true }
+                  { "name": "Run", "value": "[#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})", "inline": true },
+                  { "name": "Runner status", "value": "https://github.com/${{ github.repository }}/settings/actions/runners", "inline": false }
                 ]
               }]
             }'

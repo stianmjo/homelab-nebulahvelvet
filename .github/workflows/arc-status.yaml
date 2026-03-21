@@ -75,7 +75,7 @@ jobs:
               --arg git "$GIT_VERSION" \
               --arg dns "$DNS_RESULT" \
               --arg http "$HTTP_RESULT" \
-              '{embeds:[{title:"✅ ARC Runner Test Passed",description:"Self-hosted ARC runner on the nebulahvelvet homelab is up and running.",color:3066993,fields:[
+              '{embeds:[{title:"ARC Runner Test Passed",description:"Self-hosted ARC runner on the nebulahvelvet homelab is up and running.",color:3066993,fields:[
                 {name:"Workflow",value:$workflow,inline:true},
                 {name:"Triggered by",value:$actor,inline:true},
                 {name:"Run",value:"[\($run)](\($run_url))",inline:true},
@@ -96,7 +96,7 @@ jobs:
               --arg actor "${{ github.actor }}" \
               --arg run "#${{ github.run_number }}" \
               --arg run_url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
-              '{embeds:[{title:"⚠️ nebulahvelvet ARC runner unavailable",description:"The self-hosted ARC runner on the nebulahvelvet homelab is offline. Fell back to GitHub-hosted runner.",color:15105570,fields:[
+              '{embeds:[{title:"nebulahvelvet ARC runner unavailable",description:"The self-hosted ARC runner on the nebulahvelvet homelab is offline. Fell back to GitHub-hosted runner.",color:15105570,fields:[
                 {name:"Workflow",value:$workflow,inline:true},
                 {name:"Triggered by",value:$actor,inline:true},
                 {name:"Run",value:"[\($run)](\($run_url))",inline:true}

@@ -6,8 +6,6 @@ on:
 jobs:
   determine-runner:
     runs-on: ubuntu-latest
-    permissions:
-      actions: read
     outputs:
       runner: ${{ steps.check.outputs.runner }}
       fallback: ${{ steps.check.outputs.fallback }}
@@ -15,7 +13,7 @@ jobs:
       - name: Check ARC runner availability
         id: check
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RUNNER_API_TOKEN }}
         run: |
           RUNNERS=$(gh api repos/${{ github.repository }}/actions/runners \
             --jq '[.runners[] | select(.labels[].name == "arc-runner-set") | select(.status == "online")] | length')

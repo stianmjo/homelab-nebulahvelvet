@@ -67,4 +67,39 @@ jobs:
               --arg workflow "${{ github.workflow }}" \
               --arg actor "${{ github.actor }}" \
               --arg run "#${{ github.run_number }}" \
-              --arg run_url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run
+              --arg run_url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+              --arg hostname "$RUNNER_HOSTNAME" \
+              --arg user "$RUNNER_USER" \
+              --arg git "$GIT_VERSION" \
+              --arg dns "$DNS_RESULT" \
+              --arg http "$HTTP_RESULT" \
+              --arg runners "https://github.com/${{ github.repository }}/settings/actions/runners" \
+              '{embeds:[{title:"✅ ARC Runner Test Passed",description:"Self-hosted ARC runner on the nebulahvelvet homelab is up and running.",color:3066993,fields:[
+                {name:"Workflow",value:$workflow,inline:true},
+                {name:"Triggered by",value:$actor,inline:true},
+                {name:"Run",value:"[\($run)](\($run_url))",inline:true},
+                {name:"Hostname",value:$hostname,inline:true},
+                {name:"User",value:$user,inline:true},
+                {name:"Git version",value:$git,inline:true},
+                {name:"DNS check",value:$dns,inline:false},
+                {name:"HTTP check",value:$http,inline:false},
+                {name:"Runner status",value:$runners,inline:false}
+              ]}]}')"
+
+      - name: Notify Discord (ARC runner unavailable)
+        if: needs.determine-runner.outputs.fallback == 'true'
+        run: |
+          curl -s -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n \
+              --arg workflow "${{ github.workflow }}" \
+              --arg actor "${{ github.actor }}" \
+              --arg run "#${{ github.run_number }}" \
+              --arg run_url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+              --arg runners "https://github.com/${{ github.repository }}/settings/actions/runners" \
+              '{embeds:[{title:"⚠️ nebulahvelvet ARC runner unavailable",description:"The self-hosted ARC runner on the nebulahvelvet homelab is offline. Fell back to GitHub-hosted runner.",color:15105570,fields:[
+                {name:"Workflow",value:$workflow,inline:true},
+                {name:"Triggered by",value:$actor,inline:true},
+                {name:"Run",value:"[\($run)](\($run_url))",inline:true},
+                {name:"Runner status",value:$runners,inline:false}
+              ]}]}')"

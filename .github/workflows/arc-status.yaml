@@ -1,4 +1,4 @@
-name: ARC runner test
+name: ARC status
 
 on:
   workflow_dispatch:

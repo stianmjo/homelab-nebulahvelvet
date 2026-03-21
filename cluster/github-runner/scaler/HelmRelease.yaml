@@ -24,6 +24,10 @@ spec:
     minRunners: 0
     maxRunners: 5
 
+    controllerServiceAccount:
+      namespace: github-runner
+      name: arc-gha-rs-controller
+
     template:
       spec:
         containers:

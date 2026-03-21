@@ -29,53 +29,61 @@ jobs:
   test:
     needs: determine-runner
     runs-on: ${{ fromJson(needs.determine-runner.outputs.runner) }}
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Show runner details
+        id: runner_details
         run: |
+          echo "RUNNER_HOSTNAME=$(hostname)" >> $GITHUB_ENV
+          echo "RUNNER_USER=$(whoami)" >> $GITHUB_ENV
           echo "Runner name: $RUNNER_NAME"
           echo "Runner OS: $RUNNER_OS"
           echo "Runner arch: $RUNNER_ARCH"
-          echo "Hostname:"
           hostname
-          echo "Who am I:"
           whoami
-          echo "Working directory:"
           pwd
 
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Confirm repo contents
+        id: repo_contents
         run: |
           ls -la
-          echo "Git version:"
-          git --version
+          echo "GIT_VERSION=$(git --version)" >> $GITHUB_ENV
 
       - name: Quick network check
+        id: network_check
         run: |
           echo "DNS + HTTPS check:"
-          getent hosts github.com || nslookup github.com || true
-          curl -I https://github.com | head -n 5
+          DNS_RESULT=$(getent hosts github.com || nslookup github.com || echo "DNS lookup failed")
+          HTTP_RESULT=$(curl -sI https://github.com | head -n 1)
+          echo "DNS_RESULT=$DNS_RESULT" >> $GITHUB_ENV
+          echo "HTTP_RESULT=$HTTP_RESULT" >> $GITHUB_ENV
+          echo "$DNS_RESULT"
+          echo "$HTTP_RESULT"
 
       - name: Notify Discord (success on ARC runner)
         if: success() && needs.determine-runner.outputs.fallback == 'false'
         run: |
           curl -s -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
-            -d '{
-              "embeds": [{
-                "title": "✅ ARC Runner Test Passed",
-                "description": "Ran on self-hosted ARC runner.",
-                "color": 3066993,
-                "fields": [
-                  { "name": "Workflow", "value": "${{ github.workflow }}", "inline": true },
-                  { "name": "Triggered by", "value": "${{ github.actor }}", "inline": true },
-                  { "name": "Run", "value": "[#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})", "inline": true }
+            -d "{
+              \"embeds\": [{
+                \"title\": \"✅ ARC Runner Test Passed\",
+                \"description\": \"Self-hosted ARC runner on the nebulahvelvet homelab is up and running.\",
+                \"color\": 3066993,
+                \"fields\": [
+                  { \"name\": \"Workflow\", \"value\": \"${{ github.workflow }}\", \"inline\": true },
+                  { \"name\": \"Triggered by\", \"value\": \"${{ github.actor }}\", \"inline\": true },
+                  { \"name\": \"Run\", \"value\": \"[#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\", \"inline\": true },
+                  { \"name\": \"Hostname\", \"value\": \"$RUNNER_HOSTNAME\", \"inline\": true },
+                  { \"name\": \"User\", \"value\": \"$RUNNER_USER\", \"inline\": true },
+                  { \"name\": \"Git version\", \"value\": \"$GIT_VERSION\", \"inline\": true },
+                  { \"name\": \"DNS check\", \"value\": \"$DNS_RESULT\", \"inline\": false },
+                  { \"name\": \"HTTP check\", \"value\": \"$HTTP_RESULT\", \"inline\": false }
                 ]
               }]
-            }'
+            }"
 
       - name: Notify Discord (ARC runner unavailable)
         if: needs.determine-runner.outputs.fallback == 'true'
@@ -84,8 +92,8 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{
               "embeds": [{
-                "title": "⚠️ Self-hosted runner unavailable",
-                "description": "No ARC runners online — ran on GitHub-hosted runner instead.",
+                "title": "⚠️ nebulahvelvet ARC runner unavailable",
+                "description": "The self-hosted ARC runner on the nebulahvelvet homelab is offline. Fell back to GitHub-hosted runner.",
                 "color": 15105570,
                 "fields": [
                   { "name": "Workflow", "value": "${{ github.workflow }}", "inline": true },

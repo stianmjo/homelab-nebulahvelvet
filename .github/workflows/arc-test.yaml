@@ -6,6 +6,9 @@ on:
 jobs:
   test:
     runs-on: arc-runner-set
+    timeout-minutes: 5
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Show runner details
         run: |
@@ -56,6 +59,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     if: failure()
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - name: Show runner details
         run: |
@@ -91,7 +96,7 @@ jobs:
             -d '{
               "embeds": [{
                 "title": "✅ ARC Runner Test Passed (fallback)",
-                "description": "ARC runner failed — ran on GitHub-hosted runner instead.",
+                "description": "ARC runner unavailable — ran on GitHub-hosted runner instead.",
                 "color": 15105570,
                 "fields": [
                   { "name": "Workflow", "value": "${{ github.workflow }}", "inline": true },

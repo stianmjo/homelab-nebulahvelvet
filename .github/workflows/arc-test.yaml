@@ -4,9 +4,33 @@ on:
   workflow_dispatch:
 
 jobs:
+  determine-runner:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+    outputs:
+      runner: ${{ steps.check.outputs.runner }}
+      fallback: ${{ steps.check.outputs.fallback }}
+    steps:
+      - name: Check ARC runner availability
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RUNNERS=$(gh api repos/${{ github.repository }}/actions/runners \
+            --jq '[.runners[] | select(.labels[].name == "arc-runner-set") | select(.status == "online")] | length')
+          echo "Online ARC runners: $RUNNERS"
+          if [ "$RUNNERS" -gt "0" ]; then
+            echo 'runner=["arc-runner-set"]' >> $GITHUB_OUTPUT
+            echo 'fallback=false' >> $GITHUB_OUTPUT
+          else
+            echo 'runner=["ubuntu-latest"]' >> $GITHUB_OUTPUT
+            echo 'fallback=true' >> $GITHUB_OUTPUT
+          fi
+
   test:
-    runs-on: arc-runner-set
-    timeout-minutes: 5
+    needs: determine-runner
+    runs-on: ${{ fromJson(needs.determine-runner.outputs.runner) }}
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
@@ -37,8 +61,8 @@ jobs:
           getent hosts github.com || nslookup github.com || true
           curl -I https://github.com | head -n 5
 
-      - name: Notify Discord (success)
-        if: success()
+      - name: Notify Discord (success on ARC runner)
+        if: success() && needs.determine-runner.outputs.fallback == 'false'
         run: |
           curl -s -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
@@ -55,48 +79,15 @@ jobs:
               }]
             }'
 
-  test-fallback:
-    runs-on: ubuntu-latest
-    needs: test
-    if: failure()
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-    steps:
-      - name: Show runner details
-        run: |
-          echo "Runner name: $RUNNER_NAME"
-          echo "Runner OS: $RUNNER_OS"
-          echo "Runner arch: $RUNNER_ARCH"
-          echo "Hostname:"
-          hostname
-          echo "Who am I:"
-          whoami
-          echo "Working directory:"
-          pwd
-
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Confirm repo contents
-        run: |
-          ls -la
-          echo "Git version:"
-          git --version
-
-      - name: Quick network check
-        run: |
-          echo "DNS + HTTPS check:"
-          curl -I https://github.com | head -n 5
-
-      - name: Notify Discord (success via fallback)
-        if: success()
+      - name: Notify Discord (ARC runner unavailable)
+        if: needs.determine-runner.outputs.fallback == 'true'
         run: |
           curl -s -X POST "${{ secrets.DISCORD_WEBHOOK_URL }}" \
             -H "Content-Type: application/json" \
             -d '{
               "embeds": [{
-                "title": "✅ ARC Runner Test Passed (fallback)",
-                "description": "ARC runner unavailable — ran on GitHub-hosted runner instead.",
+                "title": "⚠️ Self-hosted runner unavailable",
+                "description": "No ARC runners online — ran on GitHub-hosted runner instead.",
                 "color": 15105570,
                 "fields": [
                   { "name": "Workflow", "value": "${{ github.workflow }}", "inline": true },

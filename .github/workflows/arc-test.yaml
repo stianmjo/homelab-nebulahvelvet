@@ -15,11 +15,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.RUNNER_API_TOKEN }}
         run: |
-          echo "=== RAW API RESPONSE ==="
-          gh api repos/${{ github.repository }}/actions/runners | jq .
-          echo "=== DONE ==="
           RUNNERS=$(gh api repos/${{ github.repository }}/actions/runners \
-            --jq '[.runners[] | select(.labels[].name == "arc-runner-set") | select(.status == "online")] | length')
+            --jq '[.runners[] | select(.name | startswith("arc-runner-set")) | select(.status == "online")] | length')
           echo "Online ARC runners: $RUNNERS"
           if [ "$RUNNERS" -gt "0" ]; then
             echo 'runner=["arc-runner-set"]' >> $GITHUB_OUTPUT

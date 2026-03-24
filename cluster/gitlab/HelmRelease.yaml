@@ -186,12 +186,14 @@ spec:
 
       gitlab-runner:
         enabled: true
-        gitlabUrl: http://gitlab-webservice-default.gitlab.svc.cluster.local:8080
         rbac:
           create: true
-        runnerToken: ""
         runners:
-          secret: gitlab-runner-secret
+          secret: gitlab-gitlab-runner-secret
+          config: |
+            [[runners]]
+              tls-skip-verify = true
+              clone_url = "http://gitlab-webservice-default.gitlab.svc.cluster.local:8080"
 
 
       kas:

@@ -120,8 +120,17 @@ spec:
         backups:
           bucket: gitlab-backups
           tmpBucket: gitlab-backup-tmp
+        
         signup:
           enabled: false
+        
+        omniauth:
+          enabled: true
+          allowSingleSignOn: ['openid_connect']
+          blockAutoCreatedUsers: false
+          providers:
+            - secret: gitlab-authentik-secret
+              key: provider
 
       # ── Registry object storage ────────────────────────────────────────────
       registry:

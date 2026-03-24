@@ -53,7 +53,7 @@ spec:
 
       # ── Ingress ────────────────────────────────────────────────────────────
       ingress:
-        configureCertmanager: false   # we manage cert-manager ourselves
+        configureCertmanager: false
         class: traefik-external
         annotations:
           cert-manager.io/cluster-issuer: letsencrypt-domeneshop
@@ -102,8 +102,6 @@ spec:
           key: password
 
       # ── Object storage — SeaweedFS S3 ─────────────────────────────────────
-      # Consolidated connection used by all rails object types.
-      # Buckets must exist in SeaweedFS before first boot (see secret-template.yaml).
       appConfig:
         object_store:
           enabled: true
@@ -132,14 +130,14 @@ spec:
           secret: gitlab-s3-secret
           key: connection
 
+      # ── External Redis ─────────────────────────────────────────────────────
       redis:
         host: gitlab-redis.gitlab.svc.cluster.local
         port: 6379
         auth:
           enabled: false
-      
 
-    # ── Disable bundled components we already have ────────────────────────────
+    # ── Disable bundled components ────────────────────────────────────────────
     nginx-ingress:
       enabled: false
 
@@ -152,14 +150,15 @@ spec:
     prometheus:
       install: false
 
-    # ── Keep bundled Valkey/Redis ─────────────────────────────────────────────
     redis:
       install: false
+
+    minio:
+      enabled: false
 
     # ── Container registry ────────────────────────────────────────────────────
     registry:
       enabled: true
-      # Docker distribution storage config (different format from rails connection)
       storage:
         secret: gitlab-registry-s3-secret
         key: config
@@ -171,8 +170,11 @@ spec:
           cpu: 500m
           memory: 512Mi
 
-    # ── GitLab sub-chart resource tuning for homelab ──────────────────────────
+    # ── GitLab sub-charts ─────────────────────────────────────────────────────
     gitlab:
+      kas:
+        enabled: false
+
       webservice:
         minReplicas: 1
         maxReplicas: 1
@@ -212,8 +214,6 @@ spec:
       gitlab-shell:
         minReplicas: 1
         maxReplicas: 1
-        # Not exposed externally — use HTTPS for git operations.
-        # For SSH, a separate MetalLB LoadBalancer would be required.
         resources:
           requests:
             cpu: 50m

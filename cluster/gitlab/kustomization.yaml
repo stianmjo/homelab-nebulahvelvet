@@ -7,3 +7,4 @@ resources:
   - HelmRelease.yaml
   - middleware.yaml
   - redis.yaml
+  - certificate.yaml

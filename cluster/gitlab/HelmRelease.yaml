@@ -1,0 +1,234 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: gitlab
+  namespace: gitlab
+spec:
+  interval: 15m
+  chart:
+    spec:
+      chart: gitlab
+      # renovate: datasource=helm depName=gitlab registryUrl=https://charts.gitlab.io
+      version: "8.9.0"
+      sourceRef:
+        kind: HelmRepository
+        name: gitlab
+        namespace: flux-system
+      interval: 1h
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  dependsOn:
+    - name: cloudnative-pg
+      namespace: cnpg-system
+    - name: cert-manager
+      namespace: cert-manager
+    - name: traefik-external
+      namespace: traefik-external
+
+  # Inject SMTP username from secret; chart does not support a secretRef for this field
+  valuesFrom:
+    - kind: Secret
+      name: gitlab-smtp-secret
+      valuesKey: username
+      targetPath: global.smtp.user_name
+
+  values:
+    global:
+      edition: ce
+
+      # ── Hostnames ──────────────────────────────────────────────────────────
+      hosts:
+        domain: nebulahvelvet.no
+        https: true
+        gitlab:
+          name: git.nebulahvelvet.no
+          https: true
+        registry:
+          name: registry.nebulahvelvet.no
+          https: true
+
+      # ── Ingress ────────────────────────────────────────────────────────────
+      ingress:
+        configureCertmanager: false   # we manage cert-manager ourselves
+        class: traefik-external
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-domeneshop
+          traefik.ingress.kubernetes.io/router.entrypoints: websecure
+          traefik.ingress.kubernetes.io/router.middlewares: "traefik-external-f2b-gitlab@kubernetescrd,traefik-external-public-chain@kubernetescrd"
+          traefik.ingress.kubernetes.io/router.tls: "true"
+        tls:
+          enabled: true
+
+      time_zone: Europe/Oslo
+
+      # ── External PostgreSQL (CNPG) ─────────────────────────────────────────
+      psql:
+        host: gitlab-postgres-rw.gitlab.svc.cluster.local
+        port: 5432
+        database: gitlab
+        username: gitlab
+        password:
+          secret: gitlab-db-credentials
+          key: password
+
+      # ── Rails secrets ──────────────────────────────────────────────────────
+      railsSecrets:
+        secret: gitlab-rails-secret
+
+      # ── Initial root password ──────────────────────────────────────────────
+      initialRootPassword:
+        secret: gitlab-initial-root-password
+        key: password
+
+      # ── Email / SMTP ───────────────────────────────────────────────────────
+      email:
+        from: "GitLab <noreply@nebulahvelvet.no>"
+        display_name: "GitLab"
+        reply_to: "noreply@nebulahvelvet.no"
+      smtp:
+        enabled: true
+        address: smtp.protonmail.ch
+        port: 587
+        starttls_auto: true
+        authentication: plain
+        openssl_verify_mode: peer
+        # user_name injected via valuesFrom above
+        password:
+          secret: gitlab-smtp-secret
+          key: password
+
+      # ── Object storage — SeaweedFS S3 ─────────────────────────────────────
+      # Consolidated connection used by all rails object types.
+      # Buckets must exist in SeaweedFS before first boot (see secret-template.yaml).
+      appConfig:
+        object_store:
+          enabled: true
+          proxy_download: true
+          connection:
+            secret: gitlab-s3-secret
+            key: connection
+        lfs:
+          bucket: gitlab-lfs
+        artifacts:
+          bucket: gitlab-artifacts
+        uploads:
+          bucket: gitlab-uploads
+        packages:
+          bucket: gitlab-packages
+        backups:
+          bucket: gitlab-backups
+          tmpBucket: gitlab-backup-tmp
+
+      # ── Registry object storage ────────────────────────────────────────────
+      registry:
+        bucket: gitlab-registry
+        connection:
+          secret: gitlab-s3-secret
+          key: connection
+
+    # ── Disable bundled components we already have ────────────────────────────
+    nginx-ingress:
+      enabled: false
+
+    certmanager:
+      install: false
+
+    postgresql:
+      install: false
+
+    prometheus:
+      install: false
+
+    # ── Keep bundled Valkey/Redis ─────────────────────────────────────────────
+    redis:
+      install: true
+
+    # ── Container registry ────────────────────────────────────────────────────
+    registry:
+      enabled: true
+      # Docker distribution storage config (different format from rails connection)
+      storage:
+        secret: gitlab-registry-s3-secret
+        key: config
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+
+    # ── GitLab sub-chart resource tuning for homelab ──────────────────────────
+    gitlab:
+      webservice:
+        minReplicas: 1
+        maxReplicas: 1
+        workerProcesses: 2
+        resources:
+          requests:
+            cpu: 300m
+            memory: 1500Mi
+          limits:
+            cpu: 2
+            memory: 3Gi
+
+      sidekiq:
+        minReplicas: 1
+        maxReplicas: 1
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 1
+            memory: 2Gi
+
+      gitaly:
+        persistence:
+          enabled: true
+          storageClass: longhorn-retain
+          size: 50Gi
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 2
+            memory: 2Gi
+
+      gitlab-shell:
+        minReplicas: 1
+        maxReplicas: 1
+        # Not exposed externally — use HTTPS for git operations.
+        # For SSH, a separate MetalLB LoadBalancer would be required.
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+
+      migrations:
+        enabled: true
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 1
+            memory: 1Gi
+
+      toolbox:
+        enabled: true
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi

@@ -1,0 +1,19 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: f2b-gitlab
+  namespace: traefik-external
+spec:
+  plugin:
+    fail2ban:
+      statuscode: "401,403"
+      findtime: 10m
+      maxretry: 10
+      bantime: 1h
+      urlregexps:
+        - regexp: ^/-/health$
+          allow: true
+        - regexp: ^/-/readiness$
+          allow: true
+        - regexp: ^/-/liveness$
+          allow: true

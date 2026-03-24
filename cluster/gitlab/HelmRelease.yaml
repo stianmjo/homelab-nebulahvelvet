@@ -122,6 +122,8 @@ spec:
         backups:
           bucket: gitlab-backups
           tmpBucket: gitlab-backup-tmp
+        signup:
+          enabled: false
 
       # ── Registry object storage ────────────────────────────────────────────
       registry:

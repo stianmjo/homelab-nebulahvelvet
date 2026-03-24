@@ -6,3 +6,4 @@ resources:
   - HelmRepository.yaml
   - HelmRelease.yaml
   - middleware.yaml
+  - redis.yaml

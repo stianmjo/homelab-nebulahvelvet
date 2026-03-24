@@ -130,6 +130,13 @@ spec:
           secret: gitlab-s3-secret
           key: connection
 
+      redis:
+        host: gitlab-redis.gitlab.svc.cluster.local
+        port: 6379
+        auth:
+          enabled: false
+      
+
     # ── Disable bundled components we already have ────────────────────────────
     nginx-ingress:
       enabled: false
@@ -145,7 +152,7 @@ spec:
 
     # ── Keep bundled Valkey/Redis ─────────────────────────────────────────────
     redis:
-      install: true
+      install: false
 
     # ── Container registry ────────────────────────────────────────────────────
     registry:

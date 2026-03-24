@@ -10,7 +10,7 @@ spec:
     spec:
       chart: gitlab
       # renovate: datasource=helm depName=gitlab registryUrl=https://charts.gitlab.io
-      version: "9.9.3"
+      version: "9.10.0"
       sourceRef:
         kind: HelmRepository
         name: gitlab

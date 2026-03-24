@@ -153,8 +153,7 @@ spec:
     nginx-ingress:
       enabled: false
 
-    certmanager:
-      install: false
+    installCertmanager: false
 
     postgresql:
       install: false

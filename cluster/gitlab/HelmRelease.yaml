@@ -181,6 +181,14 @@ spec:
 
     # ── GitLab sub-charts ─────────────────────────────────────────────────────
     gitlab:
+
+      gitlab-runner:
+        gitlabUrl: http://gitlab-webservice-default.gitlab.svc.cluster.local:8080
+        runners:
+          config: |
+            [[runners]]
+              clone_url = "http://gitlab-webservice-default.gitlab.svc.cluster.local:8080"
+
       kas:
         enabled: false
 

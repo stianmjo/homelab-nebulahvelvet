@@ -100,6 +100,9 @@ spec:
         password:
           secret: gitlab-smtp-secret
           key: password
+    
+      minio:
+        enabled: false
 
       # ── Object storage — SeaweedFS S3 ─────────────────────────────────────
       appConfig:
@@ -161,9 +164,6 @@ spec:
 
     redis:
       install: false
-
-    minio:
-      enabled: false
 
     # ── Container registry ────────────────────────────────────────────────────
     registry:

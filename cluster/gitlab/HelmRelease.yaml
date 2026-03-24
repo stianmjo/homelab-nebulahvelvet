@@ -5,6 +5,7 @@ metadata:
   namespace: gitlab
 spec:
   interval: 15m
+  timeout: 10m
   chart:
     spec:
       chart: gitlab
@@ -65,6 +66,14 @@ spec:
 
       time_zone: Europe/Oslo
 
+      # ── Disable KAS (correct global flag per docs) ─────────────────────────
+      kas:
+        enabled: false
+
+      # ── Disable MinIO (moved to global in chart 9.x) ──────────────────────
+      minio:
+        enabled: false
+
       # ── External PostgreSQL (CNPG) ─────────────────────────────────────────
       psql:
         host: gitlab-postgres-rw.gitlab.svc.cluster.local
@@ -100,9 +109,6 @@ spec:
         password:
           secret: gitlab-smtp-secret
           key: password
-    
-      minio:
-        enabled: false
 
       # ── Object storage — SeaweedFS S3 ─────────────────────────────────────
       appConfig:
@@ -123,10 +129,10 @@ spec:
         backups:
           bucket: gitlab-backups
           tmpBucket: gitlab-backup-tmp
-        
+
         signup:
           enabled: false
-        
+
         omniauth:
           enabled: true
           allowSingleSignOn: ['openid_connect']
@@ -164,9 +170,6 @@ spec:
     redis:
       install: false
 
-    gitlab-exporter:
-        enabled: false
-
     # ── Container registry ────────────────────────────────────────────────────
     registry:
       enabled: true
@@ -183,21 +186,23 @@ spec:
 
     # ── GitLab sub-charts ─────────────────────────────────────────────────────
     gitlab:
+      # Disable exporter — no Prometheus in this cluster
+      gitlab-exporter:
+        enabled: false
 
+      # Runner — uses internal service URL to avoid hairpin NAT TLS issues
       gitlab-runner:
         enabled: true
+        gitlabUrl: "http://gitlab-webservice-default.gitlab.svc.cluster.local:8080"
         rbac:
           create: true
         runners:
           secret: gitlab-gitlab-runner-secret
           config: |
             [[runners]]
-              tls-skip-verify = true
               clone_url = "http://gitlab-webservice-default.gitlab.svc.cluster.local:8080"
-
-
-      kas:
-        enabled: false
+              [runners.kubernetes]
+              image = "ubuntu:22.04"
 
       webservice:
         minReplicas: 1

@@ -74,6 +74,12 @@ spec:
               # You turned NAT-PMP off, keep it simple/static
               VPN_PORT_FORWARDING: "off"
 
+              # Disable IPv6 routing rule — prevents "file exists" stale rule on pod restart
+              VPN_IPV6: "off"
+
+              # Disable DNS-over-TLS block list downloader — not useful without tunnel up
+              DOT: "off"
+
             resources:
               requests:
                 cpu: 50m

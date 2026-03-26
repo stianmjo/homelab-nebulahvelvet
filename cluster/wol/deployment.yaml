@@ -38,6 +38,10 @@ spec:
               mountPath: /wolweb/config.json
               subPath: config.json
               readOnly: true
+            - name: config
+              mountPath: /wolweb/devices.json
+              subPath: devices.json
+              readOnly: true
           resources:
             requests:
               cpu: 10m

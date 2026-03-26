@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wolweb
+  namespace: wol
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wolweb
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: wolweb
+    spec:
+      containers:
+        - name: wolweb
+          # renovate: datasource=docker depName=ghcr.io/sameerdhoot/wolweb
+          image: ghcr.io/sameerdhoot/wolweb:latest
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          securityContext:
+            capabilities:
+              add:
+                - NET_RAW
+                - NET_BROADCAST
+          volumeMounts:
+            - name: config
+              mountPath: /wolweb/config.json
+              subPath: config.json
+              readOnly: true
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+      volumes:
+        - name: config
+          configMap:
+            name: wolweb-config

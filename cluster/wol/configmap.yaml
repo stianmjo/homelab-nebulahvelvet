@@ -6,13 +6,18 @@ metadata:
 data:
   config.json: |
     {
-      "listenaddr": ":8080",
-      "bcastaddr": "10.0.1.255:9",
+      "host": "0.0.0.0",
+      "port": 8089,
+      "vdir": "",
+      "bcastip": "10.0.1.255:9"
+    }
+  devices.json: |
+    {
       "devices": [
         {
           "name": "gaming-pc",
           "mac": "88:AE:DD:1E:4F:45",
-          "broadcast": "10.0.1.20"
+          "ip": "10.0.1.20:9"
         }
       ]
     }

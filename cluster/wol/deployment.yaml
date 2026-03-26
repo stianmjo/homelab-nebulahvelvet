@@ -17,12 +17,17 @@ spec:
     spec:
       containers:
         - name: wolweb
-          # renovate: datasource=docker depName=ghcr.io/sameerdhoot/wolweb
+          # renovate: ignore
           image: ghcr.io/sameerdhoot/wolweb:latest
           ports:
             - name: http
               containerPort: 8080
               protocol: TCP
+          env:
+            - name: WOLWEBPORT
+              value: "8089"
+            - name: WOLWEBHOST
+              value: "0.0.0.0"
           securityContext:
             capabilities:
               add:

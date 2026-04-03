@@ -30,7 +30,7 @@ spec:
             image:
               # renovate: datasource=docker depName=rommapp/romm
               repository: rommapp/romm
-              tag: "4.7.0"
+              tag: "4.8.0"
             env:
               TZ: Europe/Oslo
               DB_HOST: romm-postgres-rw.romm.svc.cluster.local

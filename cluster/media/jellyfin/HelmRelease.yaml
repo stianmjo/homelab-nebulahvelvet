@@ -27,7 +27,7 @@ spec:
       name: ""
 
     deploymentStrategy:
-      type: RollingUpdate
+      type: Recreate
 
     deploymentAnnotations: {}
 

@@ -133,12 +133,42 @@ spec:
                     fi
                   }
                   
+                  # ── Backup Jellyfin (tar config directly) ───────
+                  backup_jellyfin() {
+                    echo "Backing up Jellyfin..."
+                    mkdir -p "$BACKUP_DIR/jellyfin"
+                    
+                    POD=$(kubectl get pods -n media -l "app.kubernetes.io/name=jellyfin" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+                    
+                    if [ -z "$POD" ]; then
+                      echo "  ⚠ No pod found for Jellyfin"
+                      return
+                    fi
+                    
+                    # Create tar of essential config (database, settings, plugins)
+                    kubectl exec -n media "$POD" -- tar -czf - -C /config \
+                      data/jellyfin.db \
+                      data/library.db \
+                      data/plugins \
+                      data/root \
+                      config \
+                      2>/dev/null > "$BACKUP_DIR/jellyfin/jellyfin-$DATE.tar.gz"
+                    
+                    if [ -s "$BACKUP_DIR/jellyfin/jellyfin-$DATE.tar.gz" ]; then
+                      SIZE=$(du -h "$BACKUP_DIR/jellyfin/jellyfin-$DATE.tar.gz" | cut -f1)
+                      echo "  ✓ Created jellyfin-$DATE.tar.gz ($SIZE)"
+                    else
+                      rm -f "$BACKUP_DIR/jellyfin/jellyfin-$DATE.tar.gz"
+                      echo "  ⚠ Failed to create backup"
+                    fi
+                  }
+                  
                   # ── Run backups ─────────────────────────────────
                   backup_app "sonarr" "app.kubernetes.io/name=sonarr" "/config/Backups/scheduled"
                   backup_app "radarr" "app.kubernetes.io/name=radarr" "/config/Backups/scheduled"
                   backup_app "prowlarr" "app.kubernetes.io/name=prowlarr" "/config/Backups/scheduled"
                   backup_app "bazarr" "app.kubernetes.io/name=bazarr" "/config/backup"
-                  backup_app "jellyfin" "app.kubernetes.io/name=jellyfin" "/config/data/backups"
+                  backup_jellyfin
                   backup_qbittorrent
                   
                   # ── Retention cleanup ───────────────────────────

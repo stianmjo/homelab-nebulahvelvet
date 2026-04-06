@@ -52,7 +52,8 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: backup
-              image: bitnami/kubectl:1.31
+              # renovate: datasource=docker depName=docker.io/lachlanevenson/k8s-kubectl
+              image: docker.io/lachlanevenson/k8s-kubectl:v1.32.3
               command:
                 - /bin/bash
                 - -c

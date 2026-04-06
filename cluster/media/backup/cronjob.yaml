@@ -52,8 +52,8 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: backup
-              # renovate: datasource=docker depName=docker.io/lachlanevenson/k8s-kubectl
-              image: docker.io/lachlanevenson/k8s-kubectl:v1.32.3
+              # renovate: datasource=docker depName=alpine/k8s
+              image: alpine/k8s:1.32.3
               command:
                 - /bin/bash
                 - -c

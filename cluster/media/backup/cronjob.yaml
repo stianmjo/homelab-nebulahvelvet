@@ -145,8 +145,7 @@ spec:
                       return
                     fi
                     
-                    # Create tar of essential config (database, settings, plugins, metadata)
-                    # Excludes: log, lost+found, cache, transcodes, subtitles, attachments
+                    # Create tar of essential config (excludes metadata/images - can be re-fetched)
                     kubectl exec -n media "$POD" -- tar -czf - -C /config \
                       config \
                       data/jellyfin.db \
@@ -154,7 +153,6 @@ spec:
                       data/ScheduledTasks \
                       data/playlists \
                       data/collections \
-                      metadata \
                       plugins \
                       root \
                       2>/dev/null > "$BACKUP_DIR/jellyfin/jellyfin-$DATE.tar.gz" || true

@@ -145,14 +145,19 @@ spec:
                       return
                     fi
                     
-                    # Create tar of essential config (database, settings, plugins)
+                    # Create tar of essential config (database, settings, plugins, metadata)
+                    # Excludes: log, lost+found, cache, transcodes, subtitles, attachments
                     kubectl exec -n media "$POD" -- tar -czf - -C /config \
-                      data/jellyfin.db \
-                      data/library.db \
-                      data/plugins \
-                      data/root \
                       config \
-                      2>/dev/null > "$BACKUP_DIR/jellyfin/jellyfin-$DATE.tar.gz"
+                      data/jellyfin.db \
+                      data/device.txt \
+                      data/ScheduledTasks \
+                      data/playlists \
+                      data/collections \
+                      metadata \
+                      plugins \
+                      root \
+                      2>/dev/null > "$BACKUP_DIR/jellyfin/jellyfin-$DATE.tar.gz" || true
                     
                     if [ -s "$BACKUP_DIR/jellyfin/jellyfin-$DATE.tar.gz" ]; then
                       SIZE=$(du -h "$BACKUP_DIR/jellyfin/jellyfin-$DATE.tar.gz" | cut -f1)

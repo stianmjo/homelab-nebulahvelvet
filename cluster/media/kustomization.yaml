@@ -11,4 +11,5 @@ resources:
   - radarr
   - bazarr
   - flaresolverr
+  - backup
   

@@ -1,0 +1,185 @@
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: arr-backup
+  namespace: media
+spec:
+  schedule: "0 3 * * *"  # Daily at 03:00
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 86400
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: backup
+              image: alpine:3.21
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+                  
+                  DATE=$(date +%Y-%m-%d)
+                  RETENTION_DAYS=14
+                  
+                  echo "=== Arr Stack Backup - $DATE ==="
+                  
+                  # ── Sonarr ───────────────────────────────────────
+                  echo "Backing up Sonarr..."
+                  mkdir -p /backups/sonarr
+                  if [ -d /sonarr-config/Backups/scheduled ]; then
+                    LATEST_SONARR=$(ls -t /sonarr-config/Backups/scheduled/*.zip 2>/dev/null | head -1)
+                    if [ -n "$LATEST_SONARR" ]; then
+                      cp "$LATEST_SONARR" "/backups/sonarr/sonarr-$DATE.zip"
+                      echo "  ✓ Copied $(basename $LATEST_SONARR)"
+                    else
+                      echo "  ⚠ No Sonarr backup found"
+                    fi
+                  else
+                    echo "  ⚠ Sonarr backup directory not found"
+                  fi
+                  
+                  # ── Radarr ───────────────────────────────────────
+                  echo "Backing up Radarr..."
+                  mkdir -p /backups/radarr
+                  if [ -d /radarr-config/Backups/scheduled ]; then
+                    LATEST_RADARR=$(ls -t /radarr-config/Backups/scheduled/*.zip 2>/dev/null | head -1)
+                    if [ -n "$LATEST_RADARR" ]; then
+                      cp "$LATEST_RADARR" "/backups/radarr/radarr-$DATE.zip"
+                      echo "  ✓ Copied $(basename $LATEST_RADARR)"
+                    else
+                      echo "  ⚠ No Radarr backup found"
+                    fi
+                  else
+                    echo "  ⚠ Radarr backup directory not found"
+                  fi
+                  
+                  # ── Prowlarr ─────────────────────────────────────
+                  echo "Backing up Prowlarr..."
+                  mkdir -p /backups/prowlarr
+                  if [ -d /prowlarr-config/Backups/scheduled ]; then
+                    LATEST_PROWLARR=$(ls -t /prowlarr-config/Backups/scheduled/*.zip 2>/dev/null | head -1)
+                    if [ -n "$LATEST_PROWLARR" ]; then
+                      cp "$LATEST_PROWLARR" "/backups/prowlarr/prowlarr-$DATE.zip"
+                      echo "  ✓ Copied $(basename $LATEST_PROWLARR)"
+                    else
+                      echo "  ⚠ No Prowlarr backup found"
+                    fi
+                  else
+                    echo "  ⚠ Prowlarr backup directory not found"
+                  fi
+                  
+                  # ── Bazarr ──────────────────────────────────────
+                  echo "Backing up Bazarr..."
+                  mkdir -p /backups/bazarr
+                  if [ -d /bazarr-config/backup ]; then
+                    LATEST_BAZARR=$(ls -t /bazarr-config/backup/*.zip 2>/dev/null | head -1)
+                    if [ -n "$LATEST_BAZARR" ]; then
+                      cp "$LATEST_BAZARR" "/backups/bazarr/bazarr-$DATE.zip"
+                      echo "  ✓ Copied $(basename $LATEST_BAZARR)"
+                    else
+                      echo "  ⚠ No Bazarr backup found"
+                    fi
+                  else
+                    echo "  ⚠ Bazarr backup directory not found"
+                  fi
+                  
+                  # ── Jellyfin ────────────────────────────────────
+                  echo "Backing up Jellyfin..."
+                  mkdir -p /backups/jellyfin
+                  if [ -d /jellyfin-config/data/backups ]; then
+                    LATEST_JELLYFIN=$(ls -t /jellyfin-config/data/backups/*.zip 2>/dev/null | head -1)
+                    if [ -n "$LATEST_JELLYFIN" ]; then
+                      cp "$LATEST_JELLYFIN" "/backups/jellyfin/jellyfin-$DATE.zip"
+                      echo "  ✓ Copied $(basename $LATEST_JELLYFIN)"
+                    else
+                      echo "  ⚠ No Jellyfin backup found"
+                    fi
+                  else
+                    echo "  ⚠ Jellyfin backup directory not found"
+                  fi
+                  
+                  # ── qBittorrent ─────────────────────────────────
+                  echo "Backing up qBittorrent config..."
+                  mkdir -p /backups/qbittorrent
+                  if [ -d /qbittorrent-config/qBittorrent ]; then
+                    tar -czf "/backups/qbittorrent/qbittorrent-$DATE.tar.gz" \
+                      -C /qbittorrent-config \
+                      qBittorrent \
+                      2>/dev/null || true
+                    echo "  ✓ Created qbittorrent-$DATE.tar.gz"
+                  else
+                    echo "  ⚠ qBittorrent config directory not found"
+                  fi
+                  
+                  # ── Retention cleanup ───────────────────────────
+                  echo ""
+                  echo "Cleaning up backups older than $RETENTION_DAYS days..."
+                  find /backups -type f \( -name "*.zip" -o -name "*.tar.gz" \) -mtime +$RETENTION_DAYS -delete -print | while read f; do
+                    echo "  ✗ Deleted $f"
+                  done
+                  
+                  echo ""
+                  echo "=== Backup complete ==="
+                  echo "Backup sizes:"
+                  du -sh /backups/*/ 2>/dev/null || true
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+              volumeMounts:
+                # Backup destination (NFS)
+                - name: backups
+                  mountPath: /backups
+                # Source configs (read-only)
+                - name: sonarr-config
+                  mountPath: /sonarr-config
+                  readOnly: true
+                - name: radarr-config
+                  mountPath: /radarr-config
+                  readOnly: true
+                - name: prowlarr-config
+                  mountPath: /prowlarr-config
+                  readOnly: true
+                - name: bazarr-config
+                  mountPath: /bazarr-config
+                  readOnly: true
+                - name: jellyfin-config
+                  mountPath: /jellyfin-config
+                  readOnly: true
+                - name: qbittorrent-config
+                  mountPath: /qbittorrent-config
+                  readOnly: true
+          volumes:
+            # Backup destination
+            - name: backups
+              persistentVolumeClaim:
+                claimName: arr-backups
+            # Source configs
+            - name: sonarr-config
+              persistentVolumeClaim:
+                claimName: sonarr-config
+            - name: radarr-config
+              persistentVolumeClaim:
+                claimName: radarr-config
+            - name: prowlarr-config
+              persistentVolumeClaim:
+                claimName: prowlarr-config
+            - name: bazarr-config
+              persistentVolumeClaim:
+                claimName: bazarr-config
+            - name: jellyfin-config
+              persistentVolumeClaim:
+                claimName: jellyfin-config
+            - name: qbittorrent-config
+              persistentVolumeClaim:
+                claimName: qbittorrent-config

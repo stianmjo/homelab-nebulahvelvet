@@ -1,4 +1,37 @@
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: arr-backup
+  namespace: media
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: arr-backup
+  namespace: media
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: arr-backup
+  namespace: media
+subjects:
+  - kind: ServiceAccount
+    name: arr-backup
+    namespace: media
+roleRef:
+  kind: Role
+  name: arr-backup
+  apiGroup: rbac.authorization.k8s.io
+---
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -15,171 +48,124 @@ spec:
       backoffLimit: 2
       template:
         spec:
+          serviceAccountName: arr-backup
           restartPolicy: OnFailure
           containers:
             - name: backup
-              image: alpine:3.21
+              image: bitnami/kubectl:1.31
               command:
-                - /bin/sh
+                - /bin/bash
                 - -c
                 - |
                   set -e
                   
                   DATE=$(date +%Y-%m-%d)
                   RETENTION_DAYS=14
+                  BACKUP_DIR="/backups"
                   
                   echo "=== Arr Stack Backup - $DATE ==="
                   
-                  # ── Sonarr ───────────────────────────────────────
-                  echo "Backing up Sonarr..."
-                  mkdir -p /backups/sonarr
-                  if [ -d /sonarr-config/Backups/scheduled ]; then
-                    LATEST_SONARR=$(ls -t /sonarr-config/Backups/scheduled/*.zip 2>/dev/null | head -1)
-                    if [ -n "$LATEST_SONARR" ]; then
-                      cp "$LATEST_SONARR" "/backups/sonarr/sonarr-$DATE.zip"
-                      echo "  ✓ Copied $(basename $LATEST_SONARR)"
-                    else
-                      echo "  ⚠ No Sonarr backup found"
+                  # ── Helper function ─────────────────────────────
+                  backup_app() {
+                    local APP=$1
+                    local POD_LABEL=$2
+                    local SOURCE_PATH=$3
+                    local CONTAINER=${4:-}
+                    
+                    echo "Backing up $APP..."
+                    mkdir -p "$BACKUP_DIR/$APP"
+                    
+                    # Find the pod
+                    POD=$(kubectl get pods -n media -l "$POD_LABEL" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+                    
+                    if [ -z "$POD" ]; then
+                      echo "  ⚠ No pod found for $APP (label: $POD_LABEL)"
+                      return
                     fi
-                  else
-                    echo "  ⚠ Sonarr backup directory not found"
-                  fi
-                  
-                  # ── Radarr ───────────────────────────────────────
-                  echo "Backing up Radarr..."
-                  mkdir -p /backups/radarr
-                  if [ -d /radarr-config/Backups/scheduled ]; then
-                    LATEST_RADARR=$(ls -t /radarr-config/Backups/scheduled/*.zip 2>/dev/null | head -1)
-                    if [ -n "$LATEST_RADARR" ]; then
-                      cp "$LATEST_RADARR" "/backups/radarr/radarr-$DATE.zip"
-                      echo "  ✓ Copied $(basename $LATEST_RADARR)"
-                    else
-                      echo "  ⚠ No Radarr backup found"
+                    
+                    # Build container flag if specified
+                    CONTAINER_FLAG=""
+                    if [ -n "$CONTAINER" ]; then
+                      CONTAINER_FLAG="-c $CONTAINER"
                     fi
-                  else
-                    echo "  ⚠ Radarr backup directory not found"
-                  fi
-                  
-                  # ── Prowlarr ─────────────────────────────────────
-                  echo "Backing up Prowlarr..."
-                  mkdir -p /backups/prowlarr
-                  if [ -d /prowlarr-config/Backups/scheduled ]; then
-                    LATEST_PROWLARR=$(ls -t /prowlarr-config/Backups/scheduled/*.zip 2>/dev/null | head -1)
-                    if [ -n "$LATEST_PROWLARR" ]; then
-                      cp "$LATEST_PROWLARR" "/backups/prowlarr/prowlarr-$DATE.zip"
-                      echo "  ✓ Copied $(basename $LATEST_PROWLARR)"
-                    else
-                      echo "  ⚠ No Prowlarr backup found"
+                    
+                    # Find latest backup file
+                    LATEST=$(kubectl exec -n media $POD $CONTAINER_FLAG -- sh -c "ls -t $SOURCE_PATH 2>/dev/null | head -1" 2>/dev/null || true)
+                    
+                    if [ -z "$LATEST" ]; then
+                      echo "  ⚠ No backup files found in $SOURCE_PATH"
+                      return
                     fi
-                  else
-                    echo "  ⚠ Prowlarr backup directory not found"
-                  fi
-                  
-                  # ── Bazarr ──────────────────────────────────────
-                  echo "Backing up Bazarr..."
-                  mkdir -p /backups/bazarr
-                  if [ -d /bazarr-config/backup ]; then
-                    LATEST_BAZARR=$(ls -t /bazarr-config/backup/*.zip 2>/dev/null | head -1)
-                    if [ -n "$LATEST_BAZARR" ]; then
-                      cp "$LATEST_BAZARR" "/backups/bazarr/bazarr-$DATE.zip"
-                      echo "  ✓ Copied $(basename $LATEST_BAZARR)"
+                    
+                    # Copy the backup
+                    kubectl cp -n media $CONTAINER_FLAG "$POD:$SOURCE_PATH/$LATEST" "$BACKUP_DIR/$APP/$APP-$DATE.zip" 2>/dev/null
+                    
+                    if [ -f "$BACKUP_DIR/$APP/$APP-$DATE.zip" ]; then
+                      SIZE=$(du -h "$BACKUP_DIR/$APP/$APP-$DATE.zip" | cut -f1)
+                      echo "  ✓ Copied $LATEST ($SIZE)"
                     else
-                      echo "  ⚠ No Bazarr backup found"
+                      echo "  ⚠ Failed to copy backup"
                     fi
-                  else
-                    echo "  ⚠ Bazarr backup directory not found"
-                  fi
+                  }
                   
-                  # ── Jellyfin ────────────────────────────────────
-                  echo "Backing up Jellyfin..."
-                  mkdir -p /backups/jellyfin
-                  if [ -d /jellyfin-config/data/backups ]; then
-                    LATEST_JELLYFIN=$(ls -t /jellyfin-config/data/backups/*.zip 2>/dev/null | head -1)
-                    if [ -n "$LATEST_JELLYFIN" ]; then
-                      cp "$LATEST_JELLYFIN" "/backups/jellyfin/jellyfin-$DATE.zip"
-                      echo "  ✓ Copied $(basename $LATEST_JELLYFIN)"
+                  # ── Backup qBittorrent (tar config) ─────────────
+                  backup_qbittorrent() {
+                    echo "Backing up qBittorrent..."
+                    mkdir -p "$BACKUP_DIR/qbittorrent"
+                    
+                    POD=$(kubectl get pods -n media -l "app.kubernetes.io/name=qbittorrent" -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+                    
+                    if [ -z "$POD" ]; then
+                      echo "  ⚠ No pod found for qBittorrent"
+                      return
+                    fi
+                    
+                    # Create tar inside pod and stream it out
+                    kubectl exec -n media "$POD" -c app -- tar -czf - -C /config qBittorrent 2>/dev/null > "$BACKUP_DIR/qbittorrent/qbittorrent-$DATE.tar.gz"
+                    
+                    if [ -s "$BACKUP_DIR/qbittorrent/qbittorrent-$DATE.tar.gz" ]; then
+                      SIZE=$(du -h "$BACKUP_DIR/qbittorrent/qbittorrent-$DATE.tar.gz" | cut -f1)
+                      echo "  ✓ Created qbittorrent-$DATE.tar.gz ($SIZE)"
                     else
-                      echo "  ⚠ No Jellyfin backup found"
+                      rm -f "$BACKUP_DIR/qbittorrent/qbittorrent-$DATE.tar.gz"
+                      echo "  ⚠ Failed to create backup"
                     fi
-                  else
-                    echo "  ⚠ Jellyfin backup directory not found"
-                  fi
+                  }
                   
-                  # ── qBittorrent ─────────────────────────────────
-                  echo "Backing up qBittorrent config..."
-                  mkdir -p /backups/qbittorrent
-                  if [ -d /qbittorrent-config/qBittorrent ]; then
-                    tar -czf "/backups/qbittorrent/qbittorrent-$DATE.tar.gz" \
-                      -C /qbittorrent-config \
-                      qBittorrent \
-                      2>/dev/null || true
-                    echo "  ✓ Created qbittorrent-$DATE.tar.gz"
-                  else
-                    echo "  ⚠ qBittorrent config directory not found"
-                  fi
+                  # ── Run backups ─────────────────────────────────
+                  backup_app "sonarr" "app.kubernetes.io/name=sonarr" "/config/Backups/scheduled"
+                  backup_app "radarr" "app.kubernetes.io/name=radarr" "/config/Backups/scheduled"
+                  backup_app "prowlarr" "app.kubernetes.io/name=prowlarr" "/config/Backups/scheduled"
+                  backup_app "bazarr" "app.kubernetes.io/name=bazarr" "/config/backup"
+                  backup_app "jellyfin" "app.kubernetes.io/name=jellyfin" "/config/data/backups"
+                  backup_qbittorrent
                   
                   # ── Retention cleanup ───────────────────────────
                   echo ""
                   echo "Cleaning up backups older than $RETENTION_DAYS days..."
-                  find /backups -type f \( -name "*.zip" -o -name "*.tar.gz" \) -mtime +$RETENTION_DAYS -delete -print | while read f; do
+                  find $BACKUP_DIR -type f \( -name "*.zip" -o -name "*.tar.gz" \) -mtime +$RETENTION_DAYS -delete -print | while read f; do
                     echo "  ✗ Deleted $f"
                   done
                   
+                  # ── Summary ─────────────────────────────────────
                   echo ""
                   echo "=== Backup complete ==="
                   echo "Backup sizes:"
-                  du -sh /backups/*/ 2>/dev/null || true
+                  du -sh $BACKUP_DIR/*/ 2>/dev/null || true
+                  echo ""
+                  echo "Total:"
+                  du -sh $BACKUP_DIR 2>/dev/null || true
               resources:
                 requests:
                   cpu: 100m
                   memory: 128Mi
                 limits:
                   cpu: 500m
-                  memory: 512Mi
+                  memory: 256Mi
               volumeMounts:
-                # Backup destination (NFS)
                 - name: backups
                   mountPath: /backups
-                # Source configs (read-only)
-                - name: sonarr-config
-                  mountPath: /sonarr-config
-                  readOnly: true
-                - name: radarr-config
-                  mountPath: /radarr-config
-                  readOnly: true
-                - name: prowlarr-config
-                  mountPath: /prowlarr-config
-                  readOnly: true
-                - name: bazarr-config
-                  mountPath: /bazarr-config
-                  readOnly: true
-                - name: jellyfin-config
-                  mountPath: /jellyfin-config
-                  readOnly: true
-                - name: qbittorrent-config
-                  mountPath: /qbittorrent-config
-                  readOnly: true
           volumes:
-            # Backup destination
             - name: backups
               persistentVolumeClaim:
                 claimName: arr-backups
-            # Source configs
-            - name: sonarr-config
-              persistentVolumeClaim:
-                claimName: sonarr-config
-            - name: radarr-config
-              persistentVolumeClaim:
-                claimName: radarr-config
-            - name: prowlarr-config
-              persistentVolumeClaim:
-                claimName: prowlarr-config
-            - name: bazarr-config
-              persistentVolumeClaim:
-                claimName: bazarr-config
-            - name: jellyfin-config
-              persistentVolumeClaim:
-                claimName: jellyfin-config
-            - name: qbittorrent-config
-              persistentVolumeClaim:
-                claimName: qbittorrent-config

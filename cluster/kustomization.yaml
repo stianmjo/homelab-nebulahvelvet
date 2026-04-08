@@ -13,10 +13,10 @@ resources:
   - media
 #  - huginn
   - seaweedfs
-  - crafty
+#  - crafty
   - cnpg
   - authentik
-  - dcsg2005
-  - romm
-  - gitlab
+#  - dcsg2005
+#  - romm
+#  - gitlab
   - wol

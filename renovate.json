@@ -9,64 +9,39 @@
   "dependencyDashboard": false,
   "enabledManagers": [
     "flux",
-    "kubernetes",
-    "custom.regex"
+    "kubernetes"
   ],
   "flux": {
-    "fileMatch": [
+    "managerFilePatterns": [
       "^cluster/.+\\.ya?ml$"
     ]
   },
   "kubernetes": {
-    "fileMatch": [
+    "managerFilePatterns": [
       "^cluster/.+\\.ya?ml$"
     ]
   },
   "customManagers": [
     {
+      "customType": "regex",
+      "description": "Update dependencies with renovate annotations in YAML files",
       "managerFilePatterns": [
         "^cluster/.+\\.ya?ml$"
       ],
       "matchStrings": [
-        "# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>[^\\s]+)(?:\\s+versioning=(?<versioning>[a-z-]+))?\\s+.*?['\"]?(?<currentValue>[^'\"\\s]+)['\"]?",
-        "# renovate: datasource=(?<datasource>[a-z-]+) depName=(?<depName>[^\\s]+)(?:\\s+versioning=(?<versioning>[a-z-]+))?\\s*\\n\\s+.*?['\"]?(?<currentValue>[^'\"\\s]+)['\"]?"
+        "#\\s*renovate:\\s*datasource=(?<datasource>[a-zA-Z0-9-._]+)\\s+depName=(?<depName>[^\\s]+?)(?:\\s+versioning=(?<versioning>[a-zA-Z0-9-._]+?))?(?:\\s+registryUrl=(?<registryUrl>[^\\s]+?))?\\s+[A-Za-z0-9_-]+:\\s*[\"']?(?<currentValue>[^\"'\\s]+)[\"']?"
       ],
-      "versioningTemplate": "{{#if versioning}}{{versioning}}{{else}}semver{{/if}}"
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver-coerced{{/if}}"
     }
   ],
   "packageRules": [
     {
-      "matchDatasources": [
-        "docker"
-      ],
+      "description": "Only allow semver-like Docker tags",
+      "matchDatasources": ["docker"],
       "allowedVersions": "/^v?[0-9]+\\.[0-9]+\\.[0-9]+(\\.[0-9]+)?([-.][0-9A-Za-z]+)*$/"
-    },
-    {
-      "matchDatasources": [
-        "helm"
-      ],
-      "groupName": "Helm Charts",
-      "separateMinorPatch": true
-    },
-    {
-      "matchDatasources": [
-        "github-tags"
-      ],
-      "groupName": "GitHub Releases"
-    },
-    {
-      "matchDatasources": [
-        "docker"
-      ],
-      "matchPackageNames": [
-        "ghcr.io/stianmjo/huginn"
-      ],
-      "enabled": false
     }
   ],
   "prConcurrentLimit": 0,
   "prHourlyLimit": 0,
-  "schedule": [
-    "at any time"
-  ]
+  "schedule": ["at any time"]
 }

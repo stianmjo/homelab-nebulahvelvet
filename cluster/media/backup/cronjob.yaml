@@ -53,7 +53,7 @@ spec:
           containers:
             - name: backup
               # renovate: datasource=docker depName=alpine/k8s
-              image: alpine/k8s:1.32.3
+              image: alpine/k8s:1.35.3
               command:
                 - /bin/bash
                 - -c

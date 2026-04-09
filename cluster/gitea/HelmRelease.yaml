@@ -99,6 +99,15 @@ spec:
         existingSecret: gitea-admin-secret
         passwordMode: keepUpdated
       
+      oauth:
+        - name: "authentik"
+          provider: "openidConnect"
+          existingSecret: gitea-oauth-secret
+          autoDiscoverUrl: "https://auth.nebulahvelvet.no/application/o/gitea/.well-known/openid-configuration"
+          groupClaimName: "groups"
+          adminGroup: "Gitea Admins"
+          scopes: "openid profile email"
+      
       config:
         APP_NAME: "Gitea - nebulahvelvet"
         RUN_MODE: prod
@@ -136,6 +145,9 @@ spec:
           ROOT: /data/git/gitea-repositories
           ENABLE_PUSH_CREATE_USER: true
           ENABLE_PUSH_CREATE_ORG: true
+        
+        actions:
+          ENABLED: true
         
         packages:
           ENABLED: true

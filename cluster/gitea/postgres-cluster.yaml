@@ -6,7 +6,6 @@ metadata:
   namespace: gitea
 spec:
   instances: 1
-  primaryUpdateStrategy: supervised
   
   bootstrap:
     initdb:

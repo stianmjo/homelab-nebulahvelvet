@@ -144,7 +144,8 @@ spec:
           INSTALL_LOCK: true
         
         service:
-          DISABLE_REGISTRATION: true
+          DISABLE_REGISTRATION: false
+          ALLOW_ONLY_EXTERNAL_REGISTRATION: true
           REQUIRE_SIGNIN_VIEW: false
           DEFAULT_ALLOW_CREATE_ORGANIZATION: true
         

@@ -1,0 +1,31 @@
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: gitea-postgres
+  namespace: gitea
+spec:
+  instances: 1
+  primaryUpdateStrategy: supervised
+  
+  bootstrap:
+    initdb:
+      database: gitea
+      owner: gitea
+      secret:
+        name: gitea-db-credentials
+  
+  storage:
+    size: 5Gi
+    storageClass: longhorn
+  
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 100m
+    limits:
+      memory: 1Gi
+      cpu: 1
+  
+  monitoring:
+    enablePodMonitor: false

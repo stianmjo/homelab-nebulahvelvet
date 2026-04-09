@@ -1,0 +1,200 @@
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: gitea
+  namespace: gitea
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: gitea
+      # renovate: datasource=helm depName=gitea registryUrl=https://dl.gitea.com/charts/
+      version: "12.5.0"
+      sourceRef:
+        kind: HelmRepository
+        name: gitea
+        namespace: gitea
+      interval: 12h
+  
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  
+  dependsOn:
+    - name: cloudnative-pg
+      namespace: cnpg-system
+  
+  values:
+    # Single replica deployment
+    replicaCount: 1
+    
+    strategy:
+      type: Recreate
+    
+    image:
+      registry: docker.gitea.com
+      repository: gitea
+      # renovate: datasource=docker depName=docker.gitea.com/gitea
+      tag: "1.25.4"
+      pullPolicy: IfNotPresent
+      rootless: true
+    
+    # Service configuration
+    service:
+      http:
+        type: ClusterIP
+        port: 3000
+      ssh:
+        type: ClusterIP
+        port: 22
+    
+    # Ingress via traefik-internal (HTTP only, internal access)
+    ingress:
+      enabled: true
+      className: traefik-internal
+      annotations:
+        traefik.ingress.kubernetes.io/router.entrypoints: web
+      hosts:
+        - host: gitea.local.net
+          paths:
+            - path: /
+              pathType: Prefix
+    
+    # Persistence for Gitea data
+    persistence:
+      enabled: true
+      create: true
+      mount: true
+      size: 20Gi
+      storageClass: longhorn
+      accessModes:
+        - ReadWriteOnce
+    
+    # Resource limits
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 2
+        memory: 2Gi
+    
+    # Disable all built-in dependencies (we use external CNPG)
+    postgresql:
+      enabled: false
+    postgresql-ha:
+      enabled: false
+    valkey-cluster:
+      enabled: false
+    valkey:
+      enabled: false
+    
+    # Gitea configuration
+    gitea:
+      admin:
+        existingSecret: gitea-admin-secret
+        passwordMode: initialOnlyRequireReset
+      
+      config:
+        APP_NAME: "Gitea - nebulahvelvet"
+        RUN_MODE: prod
+        
+        server:
+          DOMAIN: gitea.local.net
+          ROOT_URL: http://gitea.local.net/
+          HTTP_PORT: 3000
+          SSH_PORT: 22
+          SSH_LISTEN_PORT: 2222
+          START_SSH_SERVER: true
+          DISABLE_SSH: false
+          LFS_START_SERVER: true
+        
+        database:
+          DB_TYPE: postgres
+          HOST: gitea-postgres-rw.gitea.svc.cluster.local:5432
+          NAME: gitea
+          USER: gitea
+          SSL_MODE: disable
+        
+        # Single-pod cache/session/queue config (no external redis needed)
+        session:
+          PROVIDER: memory
+        cache:
+          ADAPTER: memory
+        queue:
+          TYPE: level
+        
+        indexer:
+          ISSUE_INDEXER_TYPE: bleve
+          REPO_INDEXER_ENABLED: true
+        
+        repository:
+          ROOT: /data/git/gitea-repositories
+        
+        log:
+          MODE: console
+          LEVEL: info
+        
+        security:
+          INSTALL_LOCK: true
+        
+        service:
+          DISABLE_REGISTRATION: false
+          REQUIRE_SIGNIN_VIEW: false
+          DEFAULT_ALLOW_CREATE_ORGANIZATION: true
+        
+        time:
+          DEFAULT_UI_LOCATION: Europe/Oslo
+      
+      # Database password from secret
+      additionalConfigFromEnvs:
+        - name: GITEA__DATABASE__PASSWD
+          valueFrom:
+            secretKeyRef:
+              name: gitea-db-credentials
+              key: password
+      
+      # Probes
+      livenessProbe:
+        enabled: true
+        tcpSocket:
+          port: http
+        initialDelaySeconds: 200
+        timeoutSeconds: 5
+        periodSeconds: 10
+        successThreshold: 1
+        failureThreshold: 10
+      
+      readinessProbe:
+        enabled: true
+        tcpSocket:
+          port: http
+        initialDelaySeconds: 5
+        timeoutSeconds: 1
+        periodSeconds: 10
+        successThreshold: 1
+        failureThreshold: 3
+      
+      startupProbe:
+        enabled: true
+        tcpSocket:
+          port: http
+        initialDelaySeconds: 60
+        timeoutSeconds: 1
+        periodSeconds: 10
+        successThreshold: 1
+        failureThreshold: 10
+    
+    # Init container resources
+    initContainers:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 256Mi

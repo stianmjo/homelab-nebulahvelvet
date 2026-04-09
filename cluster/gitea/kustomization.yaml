@@ -5,4 +5,6 @@ resources:
   - HelmRepository.yaml
   - postgres-cluster.yaml
   - HelmRelease.yaml
+  - ingress.yaml
+  - certificate.yaml
   - runner

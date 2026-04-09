@@ -1,0 +1,13 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: gitea-external-tls
+  namespace: gitea
+spec:
+  secretName: gitea-external-tls
+  issuerRef:
+    name: letsencrypt-domeneshop
+    kind: ClusterIssuer
+  dnsNames:
+    - git.nebulahvelvet.no

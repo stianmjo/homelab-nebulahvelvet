@@ -52,17 +52,9 @@ spec:
         type: ClusterIP
         port: 22
     
-    # Ingress via traefik-internal (HTTP only, internal access)
+    # Ingress disabled - using separate Ingress resources
     ingress:
-      enabled: true
-      className: traefik-internal
-      annotations:
-        traefik.ingress.kubernetes.io/router.entrypoints: web
-      hosts:
-        - host: gitea.local.net
-          paths:
-            - path: /
-              pathType: Prefix
+      enabled: false
     
     # Persistence for Gitea data
     persistence:
@@ -104,11 +96,12 @@ spec:
         RUN_MODE: prod
         
         server:
-          DOMAIN: gitea.local.net
-          ROOT_URL: http://gitea.local.net/
+          DOMAIN: git.nebulahvelvet.no
+          ROOT_URL: https://git.nebulahvelvet.no/
           HTTP_PORT: 3000
           SSH_PORT: 22
           SSH_LISTEN_PORT: 2222
+          SSH_DOMAIN: git.nebulahvelvet.no
           START_SSH_SERVER: true
           DISABLE_SSH: false
           LFS_START_SERVER: true

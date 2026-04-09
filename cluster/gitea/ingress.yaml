@@ -1,0 +1,28 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: gitea-external
+  namespace: gitea
+  annotations:
+    kubernetes.io/ingress.class: traefik-external
+    cert-manager.io/cluster-issuer: letsencrypt-domeneshop
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.middlewares: traefik-external-public-chain@kubernetescrd
+spec:
+  ingressClassName: traefik-external
+  tls:
+    - hosts:
+        - git.nebulahvelvet.no
+      secretName: gitea-external-tls
+  rules:
+    - host: git.nebulahvelvet.no
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: gitea-http
+                port:
+                  number: 3000

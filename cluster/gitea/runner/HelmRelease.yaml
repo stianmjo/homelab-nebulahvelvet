@@ -65,17 +65,19 @@ spec:
               - "ubuntu-22.04:docker://catthehacker/ubuntu:act-22.04"
               - "linux:docker://catthehacker/ubuntu:act-latest"
           container:
-            # Connect job containers to DinD sidecar
-            docker_host: tcp://localhost:2376
+            # Connect to DinD sidecar without TLS (port 2375)
+            docker_host: tcp://localhost:2375
             privileged: true
             options: --init
-            valid_volumes:
-              - /certs/client
 
       dind:
         repository: docker
         tag: "28.3.3-dind"
         pullPolicy: IfNotPresent
+        extraEnvs:
+          # Disable TLS for simpler Docker communication
+          - name: DOCKER_TLS_CERTDIR
+            value: ""
 
       persistence:
         size: 5Gi

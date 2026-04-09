@@ -16,30 +16,30 @@ spec:
         name: gitea
         namespace: gitea
       interval: 12h
-  
+
   install:
     remediation:
       retries: 3
   upgrade:
     remediation:
       retries: 3
-  
+
   dependsOn:
     - name: gitea
       namespace: gitea
-  
+
   values:
     enabled: true
-    
+
     # Runner registration
     giteaRootURL: "http://gitea-http.gitea.svc.cluster.local:3000"
     existingSecret: "gitea-runner-secret"
     existingSecretKey: "token"
-    
+
     statefulset:
       replicas: 1
       timezone: "Europe/Oslo"
-      
+
       resources:
         requests:
           cpu: 100m
@@ -47,27 +47,35 @@ spec:
         limits:
           cpu: 2
           memory: 2Gi
-      
+
       actRunner:
         registry: docker.gitea.com
         repository: act_runner
         # renovate: datasource=docker depName=docker.gitea.com/act_runner
         tag: "0.2.13"
         pullPolicy: IfNotPresent
-        
+
         config:
           log:
             level: info
           runner:
             labels:
-              - "ubuntu-latest:docker://node:20-bookworm"
-              - "ubuntu-22.04:docker://node:20-bookworm"
-              - "linux:docker://node:20-bookworm"
-      
+              # Use catthehacker images which include Docker CLI and common build tools
+              - "ubuntu-latest:docker://catthehacker/ubuntu:act-latest"
+              - "ubuntu-22.04:docker://catthehacker/ubuntu:act-22.04"
+              - "linux:docker://catthehacker/ubuntu:act-latest"
+          container:
+            # Connect job containers to DinD sidecar
+            docker_host: tcp://localhost:2376
+            privileged: true
+            options: --init
+            valid_volumes:
+              - /certs/client
+
       dind:
         repository: docker
         tag: "28.3.3-dind"
         pullPolicy: IfNotPresent
-      
+
       persistence:
         size: 5Gi

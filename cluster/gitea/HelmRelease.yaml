@@ -129,6 +129,7 @@ spec:
           ROOT: /data/git/gitea-repositories
           ENABLE_PUSH_CREATE_USER: true
           ENABLE_PUSH_CREATE_ORG: true
+          DEFAULT_MIRROR_REPO_UNITS: "repo.code,repo.releases,repo.issues,repo.wiki,repo.projects,repo.packages,repo.actions"
         
         actions:
           ENABLED: true

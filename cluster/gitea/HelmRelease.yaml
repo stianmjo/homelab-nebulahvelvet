@@ -97,7 +97,7 @@ spec:
     gitea:
       admin:
         existingSecret: gitea-admin-secret
-        passwordMode: initialOnlyRequireReset
+        passwordMode: keepUpdated
       
       config:
         APP_NAME: "Gitea - nebulahvelvet"
@@ -134,6 +134,11 @@ spec:
         
         repository:
           ROOT: /data/git/gitea-repositories
+          ENABLE_PUSH_CREATE_USER: true
+          ENABLE_PUSH_CREATE_ORG: true
+        
+        packages:
+          ENABLED: true
         
         log:
           MODE: console
@@ -143,7 +148,7 @@ spec:
           INSTALL_LOCK: true
         
         service:
-          DISABLE_REGISTRATION: false
+          DISABLE_REGISTRATION: true
           REQUIRE_SIGNIN_VIEW: false
           DEFAULT_ALLOW_CREATE_ORGANIZATION: true
         

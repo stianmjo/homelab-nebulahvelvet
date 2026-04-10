@@ -1,0 +1,8 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: pulse
+  namespace: pulse
+spec:
+  interval: 12h
+  url: https://rcourtman.github.io/Pulse

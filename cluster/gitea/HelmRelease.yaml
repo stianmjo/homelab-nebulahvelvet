@@ -148,10 +148,10 @@ spec:
         service:
           DISABLE_REGISTRATION: false
           ALLOW_ONLY_EXTERNAL_REGISTRATION: true
-          REQUIRE_SIGNIN_VIEW: true
           DEFAULT_ALLOW_CREATE_ORGANIZATION: true
         
         "service.explore":
+          REQUIRE_SIGNIN_VIEW: true
           DISABLE_USERS_PAGE: true
           DISABLE_ORGANIZATIONS_PAGE: true
           DISABLE_CODE_PAGE: true

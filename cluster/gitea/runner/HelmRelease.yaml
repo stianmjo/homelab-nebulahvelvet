@@ -60,10 +60,14 @@ spec:
             level: info
           runner:
             labels:
-              # Use host mode so jobs can access DinD sidecar
-              - "ubuntu-latest:host"
-              - "ubuntu-22.04:host"
-              - "linux:host"
+              # Use docker:cli image which has docker CLI
+              - "ubuntu-latest:docker://docker:cli"
+              - "ubuntu-22.04:docker://docker:cli"
+              - "linux:docker://docker:cli"
+          container:
+            # Use host network so job containers can reach DinD at localhost:2375
+            network: host
+            docker_host: tcp://127.0.0.1:2375
 
       dind:
         repository: docker

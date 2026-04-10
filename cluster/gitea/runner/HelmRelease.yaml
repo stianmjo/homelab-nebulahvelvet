@@ -10,7 +10,7 @@ spec:
     spec:
       chart: actions
       # renovate: datasource=helm depName=actions registryUrl=https://dl.gitea.com/charts/
-      version: "0.0.5"
+      version: "0.0.3"
       sourceRef:
         kind: HelmRepository
         name: gitea
@@ -60,15 +60,10 @@ spec:
             level: info
           runner:
             labels:
-              # Use catthehacker images which include Docker CLI and common build tools
-              - "ubuntu-latest:docker://catthehacker/ubuntu:act-latest"
-              - "ubuntu-22.04:docker://catthehacker/ubuntu:act-22.04"
-              - "linux:docker://catthehacker/ubuntu:act-latest"
-          container:
-            # Connect to DinD sidecar without TLS (port 2375)
-            docker_host: tcp://localhost:2375
-            privileged: true
-            options: --init
+              # Use host mode so jobs can access DinD sidecar
+              - "ubuntu-latest:host"
+              - "ubuntu-22.04:host"
+              - "linux:host"
 
       dind:
         repository: docker
@@ -81,3 +76,4 @@ spec:
 
       persistence:
         size: 5Gi
+        storageClass: longhorn-retain

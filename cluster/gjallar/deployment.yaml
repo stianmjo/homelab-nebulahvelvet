@@ -17,6 +17,8 @@ spec:
       labels:
         app.kubernetes.io/name: gjallar
     spec:
+      imagePullSecrets:
+        - name: gitea-registry
       containers:
         - name: gjallar
           image: git.nebulahvelvet.no/stianmjo/gjallar:latest

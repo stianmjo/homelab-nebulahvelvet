@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gjallar
+  namespace: discord-bot
+  labels:
+    app.kubernetes.io/name: gjallar
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: gjallar
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: gjallar
+    spec:
+      containers:
+        - name: gjallar
+          # renovate: datasource=docker depName=git.nebulahvelvet.no/stianmjo/gjallar
+          image: git.nebulahvelvet.no/stianmjo/gjallar:0.2.6
+          env:
+            - name: DISCORD_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: gjallar-secret
+                  key: DISCORD_TOKEN
+            - name: TZ
+              value: "Europe/Oslo"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+      restartPolicy: Always

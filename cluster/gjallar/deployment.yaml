@@ -19,8 +19,7 @@ spec:
     spec:
       containers:
         - name: gjallar
-          # renovate: datasource=docker depName=git.nebulahvelvet.no/stianmjo/gjallar
-          image: git.nebulahvelvet.no/stianmjo/gjallar:0.2.6
+          image: git.nebulahvelvet.no/stianmjo/gjallar:latest
           env:
             - name: DISCORD_TOKEN
               valueFrom:

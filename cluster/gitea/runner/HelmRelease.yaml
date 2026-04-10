@@ -60,14 +60,13 @@ spec:
             level: info
           runner:
             labels:
-              # Use docker:cli image which has docker CLI
-              - "ubuntu-latest:docker://docker:cli"
-              - "ubuntu-22.04:docker://docker:cli"
-              - "linux:docker://docker:cli"
+              - "ubuntu-latest:docker://catthehacker/ubuntu:act-latest"
+              - "ubuntu-22.04:docker://catthehacker/ubuntu:act-22.04"
+              - "linux:docker://catthehacker/ubuntu:act-latest"
           container:
-            # Use host network so job containers can reach DinD at localhost:2375
             network: host
-            docker_host: tcp://127.0.0.1:2375
+            env:
+              DOCKER_HOST: tcp://127.0.0.1:2375
 
       dind:
         repository: docker

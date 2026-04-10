@@ -105,6 +105,7 @@ spec:
           START_SSH_SERVER: true
           DISABLE_SSH: false
           LFS_START_SERVER: true
+          LANDING_PAGE: login
         
         database:
           DB_TYPE: postgres

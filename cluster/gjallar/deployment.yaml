@@ -28,6 +28,11 @@ spec:
                 secretKeyRef:
                   name: gjallar-secret
                   key: DISCORD_TOKEN
+            - name: GUILD_ID
+              valueFrom:
+                secretKeyRef:
+                  name: gjallar-secret
+                  key: GUILD_ID
             - name: TZ
               value: "Europe/Oslo"
           resources:

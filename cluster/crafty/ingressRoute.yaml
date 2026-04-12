@@ -13,4 +13,4 @@ spec:
         - name: craftycontroller-https
           port: 8443
           scheme: https
-          serversTransport: crafty-crafty-skipverify
+          serversTransport: crafty-skipverify

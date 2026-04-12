@@ -3,11 +3,9 @@ kind: IngressRoute
 metadata:
   name: crafty-internal
   namespace: crafty
-  annotations:
-    kubernetes.io/ingress.class: traefik-internal
 spec:
   entryPoints:
-    - web
+    - websecure
   routes:
     - match: Host(`console.local.net`)
       kind: Rule
@@ -16,3 +14,4 @@ spec:
           port: 8443
           scheme: https
           serversTransport: crafty-crafty-skipverify
+  tls: {}

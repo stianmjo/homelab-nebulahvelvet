@@ -3,6 +3,8 @@ kind: IngressRoute
 metadata:
   name: crafty-internal
   namespace: crafty
+  annotations:
+    kubernetes.io/ingress.class: traefik-internal
 spec:
   entryPoints:
     - web

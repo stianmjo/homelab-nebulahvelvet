@@ -4,6 +4,8 @@ metadata:
   name: crafty-internal
   namespace: crafty
 spec:
+  annotations:
+    traefik.ingress.kubernetes.io/router.tls: "true"
   entryPoints:
     - websecure
   routes:

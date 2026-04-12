@@ -7,3 +7,4 @@ resources:
   - HelmRelease.yaml
   - ServersTransport.yaml
   - middleware.yaml
+  - ingressRoute.yaml

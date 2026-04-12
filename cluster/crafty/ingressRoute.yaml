@@ -4,10 +4,8 @@ metadata:
   name: crafty-internal
   namespace: crafty
 spec:
-  annotations:
-    traefik.ingress.kubernetes.io/router.tls: "true"
   entryPoints:
-    - websecure
+    - web
   routes:
     - match: Host(`console.local.net`)
       kind: Rule
@@ -16,4 +14,3 @@ spec:
           port: 8443
           scheme: https
           serversTransport: crafty-crafty-skipverify
-  tls: {}

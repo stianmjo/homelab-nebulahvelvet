@@ -1,4 +1,16 @@
 apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: crafty-ws-headers
+  namespace: crafty
+  annotations:
+    kubernetes.io/ingress.class: traefik-internal
+spec:
+  headers:
+    customRequestHeaders:
+      X-Forwarded-Proto: "https"
+---
+apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: crafty-internal
@@ -11,6 +23,8 @@ spec:
   routes:
     - match: Host(`console.local.net`)
       kind: Rule
+      middlewares:
+        - name: crafty-ws-headers
       services:
         - name: craftycontroller-https
           port: 8443

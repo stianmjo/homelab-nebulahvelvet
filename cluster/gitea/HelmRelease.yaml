@@ -10,7 +10,7 @@ spec:
     spec:
       chart: gitea
       # renovate: datasource=helm depName=gitea registryUrl=https://dl.gitea.com/charts/
-      version: "12.5.0"
+      version: "12.5.1"
       sourceRef:
         kind: HelmRepository
         name: gitea

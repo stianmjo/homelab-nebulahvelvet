@@ -28,6 +28,8 @@ A bare-metal Kubernetes cluster running on commodity hardware, fully managed thr
 | ![](https://img.shields.io/badge/-00ADD8?style=flat-square) | Data | SeaweedFS | S3-compatible object storage for backups and artifacts |
 | ![](https://img.shields.io/badge/-F5A623?style=flat-square) | Data | NFS | Shared storage for media libraries and bulk data |
 | ![](https://img.shields.io/badge/-336791?style=flat-square) | Data | CloudNativePG | PostgreSQL operator for stateful database workloads |
+| | | | |
+| ![](https://img.shields.io/badge/-5865F2?style=flat-square) | Ops | apt-scanner | Bi-weekly CVE and package audit across all nodes, reported to Discord |
 
 ---
 
@@ -40,6 +42,8 @@ The cluster follows a GitOps workflow — all configuration lives in this reposi
 **Identity** is centralized through Authentik, providing SSO across services. Gitea mirrors repositories from GitHub and runs CI/CD pipelines locally, pushing built images to its own container registry.
 
 **Storage** is layered: Longhorn handles stateful workloads needing block storage, SeaweedFS provides S3 for object data, and NFS shares bulk storage across pods.
+
+**Ops** is automated where possible. apt-scanner runs every Monday and Friday, spawning privileged pods on each node to audit upgradable packages, query the Ubuntu CVE API for severity, and post a color-coded embed to Discord.
 
 ---
 
@@ -60,6 +64,7 @@ cluster/
 ├── nfs-provisioner/  Dynamic NFS volume provisioner
 ├── cnpg/             CloudNativePG operator
 │
+├── apt-scanner/      Node CVE and package audit CronJob
 ├── renovate/         Automated dependency updates
 ├── github-runner/    Self-hosted GitHub Actions runners
 └── ...

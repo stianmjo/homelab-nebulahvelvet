@@ -4,7 +4,6 @@ metadata:
   name: apt-scanner
   namespace: apt-scanner
 spec:
-  # Every Sunday at 08:00 Oslo time
   schedule: "0 8 * * 0"
   timeZone: "Europe/Oslo"
   concurrencyPolicy: Forbid

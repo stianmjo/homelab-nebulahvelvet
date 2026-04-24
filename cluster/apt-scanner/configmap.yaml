@@ -8,25 +8,37 @@ data:
     #!/usr/bin/env python3
     """
     apt-scanner — scans all nebulahvelvet nodes for upgradable packages,
-    identifies security updates (noble-security), and posts a Discord embed.
-    Runs as a privileged pod orchestrator using the Kubernetes Python client.
+    excludes held packages, identifies security updates (noble-security),
+    queries the Ubuntu CVE API for severity, and posts a Discord embed.
     """
-    import os
     import time
     import requests
     from kubernetes import client, config
 
     # ── Config ────────────────────────────────────────────────────────────────
-    WEBHOOK_URL  = open('/secrets/webhook-url').read().strip()
-    NODES        = ['mpc01', 'mpc02', 'mpc03']
-    NAMESPACE    = 'apt-scanner'
-    SCAN_TIMEOUT = 120  # seconds to wait for each node scan pod
+    WEBHOOK_URL   = open('/secrets/webhook-url').read().strip()
+    NODES         = ['mpc01', 'mpc02', 'mpc03']
+    NAMESPACE     = 'apt-scanner'
+    SCAN_TIMEOUT  = 120
+    CVE_API       = 'https://ubuntu.com/security/cves.json'
+    CVE_TIMEOUT   = 8
+    MAX_CVE_PKGS  = 10   # max security packages to look up CVEs for
 
     # Discord embed colours
-    COLOR_GREEN  = 3066993   # all up to date
-    COLOR_BLUE   = 3447003   # non-security updates available
-    COLOR_YELLOW = 16776960  # security updates available
-    COLOR_RED    = 15158332  # scan failed on one or more nodes
+    COLOR_GREEN   = 3066993
+    COLOR_BLUE    = 3447003
+    COLOR_YELLOW  = 16776960
+    COLOR_ORANGE  = 15105570
+    COLOR_RED     = 15158332
+
+    # Ubuntu priority → (emoji, weight, colour)
+    PRIORITY_MAP = {
+        'critical':   ('🔴', 5, COLOR_RED),
+        'high':       ('🟠', 4, COLOR_ORANGE),
+        'medium':     ('🟡', 3, COLOR_YELLOW),
+        'low':        ('⚪', 2, COLOR_BLUE),
+        'negligible': ('⚫', 1, COLOR_BLUE),
+    }
 
     # ── Kubernetes client ─────────────────────────────────────────────────────
     config.load_incluster_config()
@@ -34,13 +46,12 @@ data:
 
     # ── Helpers ───────────────────────────────────────────────────────────────
     def scan_node(node: str) -> str:
-        """Spawn a privileged pod on `node`, run apt list --upgradable via nsenter,
-        return raw stdout."""
         pod_name = f"apt-scan-{node}-{int(time.time())}"
         apt_cmd = (
+            "HELD=$(nsenter -t 1 -m -u -n -i -- apt-mark showhold 2>/dev/null | tr '\\n' ' '); "
+            "echo \"HELD:${HELD}\"; "
             "nsenter -t 1 -m -u -n -i -- "
-            "bash -c 'apt-get update -qq 2>/dev/null; "
-            "apt list --upgradable 2>/dev/null' "
+            "bash -c 'apt-get update -qq 2>/dev/null; apt list --upgradable 2>/dev/null' "
             "| grep -v '^Listing' || true"
         )
         pod = client.V1Pod(
@@ -63,10 +74,8 @@ data:
                 )],
             ),
         )
-
         v1.create_namespaced_pod(namespace=NAMESPACE, body=pod)
 
-        # Wait for pod to complete
         deadline = time.time() + SCAN_TIMEOUT
         while time.time() < deadline:
             p = v1.read_namespaced_pod(name=pod_name, namespace=NAMESPACE)
@@ -74,13 +83,11 @@ data:
                 break
             time.sleep(3)
 
-        # Collect logs
         try:
             logs = v1.read_namespaced_pod_log(name=pod_name, namespace=NAMESPACE)
         except Exception as e:
-            logs = f"ERROR reading logs: {e}"
+            logs = f"ERROR: {e}"
 
-        # Cleanup — best-effort
         try:
             v1.delete_namespaced_pod(
                 name=pod_name, namespace=NAMESPACE,
@@ -91,22 +98,58 @@ data:
 
         return logs
 
-    def parse_packages(output: str) -> list[dict]:
-        """Parse `apt list --upgradable` output into a list of package dicts."""
+    def parse_packages(output: str):
+        held = []
         packages = []
         for line in output.strip().splitlines():
+            if line.startswith("HELD:"):
+                held = [p for p in line[5:].split() if p]
+                continue
             if "/" not in line:
                 continue
             name = line.split("/")[0]
+            if name in held:
+                continue
             is_security = "noble-security" in line
             packages.append({"name": name, "security": is_security})
-        return packages
+        return packages, held
+
+    def get_cves_for_package(pkg_name: str) -> list:
+        try:
+            r = requests.get(
+                CVE_API,
+                params={"package": pkg_name, "release": "noble", "limit": 5},
+                timeout=CVE_TIMEOUT,
+            )
+            if r.status_code != 200:
+                return []
+            data = r.json()
+            cves = []
+            for cve in data.get("cves", []):
+                cve_id   = cve.get("id", "")
+                priority = (cve.get("ubuntu_priority") or cve.get("priority", "unknown")).lower()
+                cvss     = cve.get("cvss3_score") or cve.get("cvss_score", "")
+                if cve_id:
+                    cves.append({"id": cve_id, "priority": priority, "cvss": cvss})
+            return cves
+        except Exception:
+            return []
+
+    def format_cve_line(cves: list) -> str:
+        parts = []
+        for cve in cves[:3]:
+            p     = cve["priority"]
+            emoji = PRIORITY_MAP.get(p, ('❓', 0, COLOR_BLUE))[0]
+            score = f" ({cve['cvss']})" if cve['cvss'] else ""
+            parts.append(f"{emoji}`{cve['id']}`{score} {p}")
+        return " · ".join(parts)
 
     def truncate(text: str, limit: int = 1000) -> str:
         return text if len(text) <= limit else text[:limit - 3] + "…"
 
     # ── Main scan loop ────────────────────────────────────────────────────────
-    fields      = []
+    fields       = []
+    worst_weight = 0
     has_security = False
     has_updates  = False
     has_error    = False
@@ -114,20 +157,41 @@ data:
     for node in NODES:
         print(f"[{node}] Scanning…", flush=True)
         try:
-            output   = scan_node(node)
-            packages = parse_packages(output)
-            total    = len(packages)
-            sec_pkgs = [p for p in packages if p["security"]]
+            output             = scan_node(node)
+            packages, held     = parse_packages(output)
+            total              = len(packages)
+            sec_pkgs           = [p for p in packages if p["security"]]
 
             if total == 0:
                 value = "✅ Up to date"
+                if held:
+                    value += f"\n⏸ Held (excluded): `{' '.join(held)}`"
             else:
                 has_updates = True
-                value = f"📦 **{total}** upgradable"
+                non_sec     = total - len(sec_pkgs)
+                value       = f"📦 **{total}** upgradable"
+                if held:
+                    value += f" *(held excluded: {len(held)})*"
+                if non_sec:
+                    value += f"\n📋 **{non_sec}** non-security"
+
                 if sec_pkgs:
                     has_security = True
-                    names = " ".join(p["name"] for p in sec_pkgs[:20])
-                    value += f"\n🔒 **{len(sec_pkgs)}** security updates:\n`{names}`"
+                    value += f"\n🔒 **{len(sec_pkgs)}** security updates:\n"
+                    cve_lines = []
+                    for pkg in sec_pkgs[:MAX_CVE_PKGS]:
+                        cves = get_cves_for_package(pkg["name"])
+                        if cves:
+                            for cve in cves:
+                                w = PRIORITY_MAP.get(cve["priority"], ('', 0, 0))[1]
+                                worst_weight = max(worst_weight, w)
+                            cve_lines.append(f"• `{pkg['name']}` — {format_cve_line(cves)}")
+                        else:
+                            cve_lines.append(f"• `{pkg['name']}`")
+                        time.sleep(0.3)
+                    if len(sec_pkgs) > MAX_CVE_PKGS:
+                        cve_lines.append(f"*…and {len(sec_pkgs) - MAX_CVE_PKGS} more*")
+                    value += "\n".join(cve_lines)
 
         except Exception as e:
             has_error = True
@@ -139,7 +203,11 @@ data:
     # ── Determine embed colour ────────────────────────────────────────────────
     if has_error:
         color = COLOR_RED
-    elif has_security:
+    elif worst_weight >= 5:
+        color = COLOR_RED
+    elif worst_weight >= 4:
+        color = COLOR_ORANGE
+    elif worst_weight >= 3:
         color = COLOR_YELLOW
     elif has_updates:
         color = COLOR_BLUE

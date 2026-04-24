@@ -10,6 +10,8 @@ spec:
   selector:
     matchLabels:
       app: proton-relay
+  strategy:
+    type: Recreate
   template:
     metadata:
       labels:
@@ -17,12 +19,17 @@ spec:
     spec:
       containers:
         - name: proton-relay
-          image: ghcr.io/stianmjo/proton-relay:latest
+          # renovate: datasource=docker depName=ghcr.io/stianmjo/proton-relay
+          image: ghcr.io/stianmjo/proton-relay:1.0.3
           ports:
             - containerPort: 8080
           env:
             - name: PROTON_PASS_VAULT
               value: "Kubernetes"
+            - name: PROTON_PASS_KEY_PROVIDER
+              value: "env"
+            - name: TZ
+              value: "Europe/Oslo"
           envFrom:
             - secretRef:
                 name: proton-relay
@@ -30,13 +37,13 @@ spec:
             httpGet:
               path: /health
               port: 8080
-            initialDelaySeconds: 10
+            initialDelaySeconds: 15
             periodSeconds: 30
           readinessProbe:
             httpGet:
               path: /health
               port: 8080
-            initialDelaySeconds: 10
+            initialDelaySeconds: 15
             periodSeconds: 10
           resources:
             requests:

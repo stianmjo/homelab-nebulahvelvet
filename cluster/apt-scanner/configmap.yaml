@@ -1,0 +1,164 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: apt-scanner-script
+  namespace: apt-scanner
+data:
+  scan.py: |
+    #!/usr/bin/env python3
+    """
+    apt-scanner — scans all nebulahvelvet nodes for upgradable packages,
+    identifies security updates (noble-security), and posts a Discord embed.
+    Runs as a privileged pod orchestrator using the Kubernetes Python client.
+    """
+    import os
+    import time
+    import requests
+    from kubernetes import client, config
+
+    # ── Config ────────────────────────────────────────────────────────────────
+    WEBHOOK_URL  = open('/secrets/webhook-url').read().strip()
+    NODES        = ['mpc01', 'mpc02', 'mpc03']
+    NAMESPACE    = 'apt-scanner'
+    SCAN_TIMEOUT = 120  # seconds to wait for each node scan pod
+
+    # Discord embed colours
+    COLOR_GREEN  = 3066993   # all up to date
+    COLOR_BLUE   = 3447003   # non-security updates available
+    COLOR_YELLOW = 16776960  # security updates available
+    COLOR_RED    = 15158332  # scan failed on one or more nodes
+
+    # ── Kubernetes client ─────────────────────────────────────────────────────
+    config.load_incluster_config()
+    v1 = client.CoreV1Api()
+
+    # ── Helpers ───────────────────────────────────────────────────────────────
+    def scan_node(node: str) -> str:
+        """Spawn a privileged pod on `node`, run apt list --upgradable via nsenter,
+        return raw stdout."""
+        pod_name = f"apt-scan-{node}-{int(time.time())}"
+        apt_cmd = (
+            "nsenter -t 1 -m -u -n -i -- "
+            "bash -c 'apt-get update -qq 2>/dev/null; "
+            "apt list --upgradable 2>/dev/null' "
+            "| grep -v '^Listing' || true"
+        )
+        pod = client.V1Pod(
+            metadata=client.V1ObjectMeta(name=pod_name, namespace=NAMESPACE),
+            spec=client.V1PodSpec(
+                node_selector={"kubernetes.io/hostname": node},
+                host_pid=True,
+                restart_policy="Never",
+                tolerations=[client.V1Toleration(operator="Exists")],
+                containers=[client.V1Container(
+                    name="scan",
+                    image="ubuntu:24.04",
+                    command=["/bin/bash", "-c"],
+                    args=[apt_cmd],
+                    security_context=client.V1SecurityContext(privileged=True),
+                    resources=client.V1ResourceRequirements(
+                        requests={"cpu": "50m", "memory": "64Mi"},
+                        limits={"cpu": "200m", "memory": "128Mi"},
+                    ),
+                )],
+            ),
+        )
+
+        v1.create_namespaced_pod(namespace=NAMESPACE, body=pod)
+
+        # Wait for pod to complete
+        deadline = time.time() + SCAN_TIMEOUT
+        while time.time() < deadline:
+            p = v1.read_namespaced_pod(name=pod_name, namespace=NAMESPACE)
+            if p.status.phase in ("Succeeded", "Failed"):
+                break
+            time.sleep(3)
+
+        # Collect logs
+        try:
+            logs = v1.read_namespaced_pod_log(name=pod_name, namespace=NAMESPACE)
+        except Exception as e:
+            logs = f"ERROR reading logs: {e}"
+
+        # Cleanup — best-effort
+        try:
+            v1.delete_namespaced_pod(
+                name=pod_name, namespace=NAMESPACE,
+                body=client.V1DeleteOptions(grace_period_seconds=0),
+            )
+        except Exception:
+            pass
+
+        return logs
+
+    def parse_packages(output: str) -> list[dict]:
+        """Parse `apt list --upgradable` output into a list of package dicts."""
+        packages = []
+        for line in output.strip().splitlines():
+            if "/" not in line:
+                continue
+            name = line.split("/")[0]
+            is_security = "noble-security" in line
+            packages.append({"name": name, "security": is_security})
+        return packages
+
+    def truncate(text: str, limit: int = 1000) -> str:
+        return text if len(text) <= limit else text[:limit - 3] + "…"
+
+    # ── Main scan loop ────────────────────────────────────────────────────────
+    fields      = []
+    has_security = False
+    has_updates  = False
+    has_error    = False
+
+    for node in NODES:
+        print(f"[{node}] Scanning…", flush=True)
+        try:
+            output   = scan_node(node)
+            packages = parse_packages(output)
+            total    = len(packages)
+            sec_pkgs = [p for p in packages if p["security"]]
+
+            if total == 0:
+                value = "✅ Up to date"
+            else:
+                has_updates = True
+                value = f"📦 **{total}** upgradable"
+                if sec_pkgs:
+                    has_security = True
+                    names = " ".join(p["name"] for p in sec_pkgs[:20])
+                    value += f"\n🔒 **{len(sec_pkgs)}** security updates:\n`{names}`"
+
+        except Exception as e:
+            has_error = True
+            value = f"❌ Scan failed: `{str(e)[:200]}`"
+
+        fields.append({"name": node, "value": truncate(value), "inline": False})
+        print(f"[{node}] Done.", flush=True)
+
+    # ── Determine embed colour ────────────────────────────────────────────────
+    if has_error:
+        color = COLOR_RED
+    elif has_security:
+        color = COLOR_YELLOW
+    elif has_updates:
+        color = COLOR_BLUE
+    else:
+        color = COLOR_GREEN
+
+    # ── Post Discord embed ────────────────────────────────────────────────────
+    timestamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    payload = {
+        "embeds": [{
+            "title": "🔍 nebulahvelvet — APT Security Scan",
+            "description": "Weekly package audit across all cluster nodes",
+            "color": color,
+            "fields": fields,
+            "footer": {"text": "nebulahvelvet.no | apt-scanner"},
+            "timestamp": timestamp,
+        }]
+    }
+
+    resp = requests.post(WEBHOOK_URL, json=payload, timeout=10)
+    resp.raise_for_status()
+    print("Discord notification sent.", flush=True)

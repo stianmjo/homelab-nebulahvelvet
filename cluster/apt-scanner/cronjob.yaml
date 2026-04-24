@@ -1,0 +1,53 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: apt-scanner
+  namespace: apt-scanner
+spec:
+  # Every Sunday at 08:00 Oslo time
+  schedule: "0 8 * * 0"
+  timeZone: "Europe/Oslo"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      ttlSecondsAfterFinished: 86400
+      template:
+        spec:
+          serviceAccountName: apt-scanner
+          restartPolicy: Never
+          containers:
+            - name: scanner
+              # renovate: datasource=docker depName=python
+              image: python:3.12-slim
+              command:
+                - /bin/bash
+                - -c
+                - |
+                  pip install kubernetes requests --quiet --no-cache-dir \
+                  && python /scripts/scan.py
+              env:
+                - name: TZ
+                  value: Europe/Oslo
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  cpu: 500m
+                  memory: 256Mi
+              volumeMounts:
+                - name: script
+                  mountPath: /scripts
+                - name: discord-secret
+                  mountPath: /secrets
+                  readOnly: true
+          volumes:
+            - name: script
+              configMap:
+                name: apt-scanner-script
+            - name: discord-secret
+              secret:
+                secretName: apt-scanner-discord

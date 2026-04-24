@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: proton-relay
+  namespace: external-secrets
+  labels:
+    app: proton-relay
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: proton-relay
+  template:
+    metadata:
+      labels:
+        app: proton-relay
+    spec:
+      containers:
+        - name: proton-relay
+          image: ghcr.io/stianmjo/proton-relay:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PROTON_PASS_VAULT
+              value: "Kubernetes"
+          envFrom:
+            - secretRef:
+                name: proton-relay
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: proton-relay
+  namespace: external-secrets
+spec:
+  selector:
+    app: proton-relay
+  ports:
+    - port: 80
+      targetPort: 8080

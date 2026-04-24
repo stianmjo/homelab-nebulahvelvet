@@ -73,8 +73,22 @@ cluster/
 ---
 
 ## Secrets
-
-Credentials are never committed to the repository. Each component that requires secrets includes a `*-secret-template.yaml` file documenting the expected structure. Apply secrets manually before deploying workloads.
+ 
+Credentials are never committed to the repository. Secrets are managed through two complementary patterns:
+ 
+**Bootstrap secrets** — credentials required before workloads can start (PATs, database passwords, API keys) are applied manually using `kubectl create secret`. Each component that requires a bootstrap secret includes a `*-secret-template.yaml` documenting the expected structure and key names.
+ 
+**Runtime secrets** — all other secrets are managed by [External Secrets Operator](https://external-secrets.io) via [proton-relay](https://github.com/stianmjo/proton-relay), a lightweight bridge that pulls secrets from Proton Pass vaults into Kubernetes Secrets on demand. ESO syncs secrets on a configurable refresh interval and keeps them up to date automatically.
+ 
+```
+Proton Pass vault → proton-relay → ESO ClusterSecretStore → ExternalSecret → Kubernetes Secret
+```
+ 
+To force an immediate sync of a secret:
+```sh
+kubectl annotate externalsecret <name> -n <namespace> force-sync=$(date +%s) --overwrite
+```
+ 
 
 ---
 

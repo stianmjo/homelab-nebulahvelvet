@@ -4,7 +4,7 @@ metadata:
   name: apt-scanner
   namespace: apt-scanner
 spec:
-  schedule: "0 8 * * 0"
+  schedule: "0 8 * * 1,5"
   timeZone: "Europe/Oslo"
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 3

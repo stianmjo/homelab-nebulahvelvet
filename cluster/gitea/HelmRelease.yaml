@@ -40,6 +40,8 @@ spec:
     
     image:
       rootless: true
+      # Pin to 1.25.5 - chart 12.5.3 scripts are incompatible with 1.26.x
+      tag: "1.25.5"
     
     # Service configuration
     service:

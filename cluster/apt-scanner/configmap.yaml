@@ -8,58 +8,114 @@ data:
     #!/usr/bin/env python3
     """
     apt-scanner — scans all nebulahvelvet nodes for upgradable packages,
-    excludes held packages, identifies security updates (noble-security),
-    queries the Ubuntu CVE API for severity, and posts a Discord embed.
+    excludes held packages, identifies security updates, queries Ubuntu
+    notices API for CVE details, and posts a structured Discord embed.
+
+    Architecture: single orchestrator pod spawns one privileged scan pod
+    per node in parallel, collects results, then posts to Discord.
+
+    API notes (confirmed from live testing 2026-05-03):
+    - notices.json?details=PKG  — exact package name match
+    - cves.json?package=PKG     — substring match, unreliable — do not use
+    - CVE fields: id (str), priority (str), cvss3 (null | {score: float})
+    - Notice fields: id, cves_ids (list[str]), release_packages (dict[codename, list])
     """
     import time
+    import uuid
     import requests
+    from dataclasses import dataclass, field
+    from concurrent.futures import ThreadPoolExecutor, as_completed
     from kubernetes import client, config
 
     # ── Config ────────────────────────────────────────────────────────────────
-    WEBHOOK_URL   = open('/secrets/webhook-url').read().strip()
-    NODES         = ['mpc01', 'mpc02', 'mpc03']
-    NAMESPACE     = 'apt-scanner'
-    SCAN_TIMEOUT  = 120
-    CVE_API       = 'https://ubuntu.com/security/cves.json'
-    CVE_TIMEOUT   = 8
-    MAX_CVE_PKGS  = 10   # max security packages to look up CVEs for
+    WEBHOOK_URL    = open('/secrets/webhook-url').read().strip()
+    NODES          = ['mpc01', 'mpc02', 'mpc03']
+    NAMESPACE      = 'apt-scanner'
+    POD_TIMEOUT    = 90     # seconds to wait for each scan pod
+    POD_ACTIVE_SEC = 80     # pod activeDeadlineSeconds (slightly under POD_TIMEOUT)
+    API_TIMEOUT    = 10     # Ubuntu API call timeout
+    MAX_SEC_PKGS   = 10     # max packages to look up CVEs for
+    RELEASE        = 'noble'
+    NOTICES_API    = 'https://ubuntu.com/security/notices.json'
+    CVES_API       = 'https://ubuntu.com/security/cves.json'
 
     # Discord embed colours
-    COLOR_GREEN   = 3066993
-    COLOR_BLUE    = 3447003
-    COLOR_YELLOW  = 16776960
-    COLOR_ORANGE  = 15105570
-    COLOR_RED     = 15158332
+    COLOR_GREEN    = 4437377    # all clear
+    COLOR_BLUE     = 4886754    # non-security updates only
+    COLOR_YELLOW   = 16312092   # medium CVEs
+    COLOR_ORANGE   = 15105570   # high CVEs
+    COLOR_RED      = 15158332   # critical or scan error
 
-    # Ubuntu priority → (emoji, weight, colour)
-    PRIORITY_MAP = {
-        'critical':   ('🔴', 5, COLOR_RED),
-        'high':       ('🟠', 4, COLOR_ORANGE),
-        'medium':     ('🟡', 3, COLOR_YELLOW),
-        'low':        ('⚪', 2, COLOR_BLUE),
-        'negligible': ('⚫', 1, COLOR_BLUE),
+    PRIORITY_WEIGHT = {
+        'critical':   5,
+        'high':       4,
+        'medium':     3,
+        'low':        2,
+        'negligible': 1,
     }
+
+    # ── Data types ────────────────────────────────────────────────────────────
+    @dataclass
+    class Package:
+        name: str
+        security: bool
+
+    @dataclass
+    class CveInfo:
+        cve_ids: list = field(default_factory=list)
+        priority: str = 'unknown'
+        cvss: str = ''
+        usn: str = ''
+
+    @dataclass
+    class NodeResult:
+        node: str
+        error: str = ''
+        packages: list = field(default_factory=list)
+        held: list = field(default_factory=list)
+
+        @property
+        def ok(self) -> bool:
+            return not self.error
+
+        @property
+        def security_packages(self) -> list:
+            return [p for p in self.packages if p.security]
+
+        @property
+        def non_security_count(self) -> int:
+            return len(self.packages) - len(self.security_packages)
 
     # ── Kubernetes client ─────────────────────────────────────────────────────
     config.load_incluster_config()
     v1 = client.CoreV1Api()
 
-    # ── Helpers ───────────────────────────────────────────────────────────────
-    def scan_node(node: str) -> str:
-        pod_name = f"apt-scan-{node}-{int(time.time())}"
+    # ── Node scanner ─────────────────────────────────────────────────────────
+    def scan_node(node: str) -> NodeResult:
+        """
+        Spawn a short-lived privileged pod on `node`, run apt via nsenter
+        into the host namespaces, return a structured NodeResult.
+
+        Does NOT run apt-get update — unattended-upgrades refreshes
+        package lists daily so lists are already current.
+        """
+        pod_name = f"apt-scan-{node}-{uuid.uuid4().hex[:8]}"
+
         apt_cmd = (
             "HELD=$(nsenter -t 1 -m -u -n -i -- apt-mark showhold 2>/dev/null | tr '\\n' ' '); "
             "echo \"HELD:${HELD}\"; "
             "nsenter -t 1 -m -u -n -i -- "
-            "bash -c 'apt-get update -qq 2>/dev/null; apt list --upgradable 2>/dev/null' "
+            "apt list --upgradable 2>/dev/null "
             "| grep -v '^Listing' || true"
         )
+
         pod = client.V1Pod(
             metadata=client.V1ObjectMeta(name=pod_name, namespace=NAMESPACE),
             spec=client.V1PodSpec(
                 node_selector={"kubernetes.io/hostname": node},
                 host_pid=True,
                 restart_policy="Never",
+                active_deadline_seconds=POD_ACTIVE_SEC,
                 tolerations=[client.V1Toleration(operator="Exists")],
                 containers=[client.V1Container(
                     name="scan",
@@ -68,39 +124,51 @@ data:
                     args=[apt_cmd],
                     security_context=client.V1SecurityContext(privileged=True),
                     resources=client.V1ResourceRequirements(
-                        requests={"cpu": "50m", "memory": "64Mi"},
-                        limits={"cpu": "200m", "memory": "128Mi"},
+                        requests={"cpu": "50m",  "memory": "64Mi"},
+                        limits={"cpu":   "200m", "memory": "128Mi"},
                     ),
                 )],
             ),
         )
-        v1.create_namespaced_pod(namespace=NAMESPACE, body=pod)
 
-        deadline = time.time() + SCAN_TIMEOUT
-        while time.time() < deadline:
-            p = v1.read_namespaced_pod(name=pod_name, namespace=NAMESPACE)
-            if p.status.phase in ("Succeeded", "Failed"):
-                break
-            time.sleep(3)
-
+        raw_logs = ""
         try:
-            logs = v1.read_namespaced_pod_log(name=pod_name, namespace=NAMESPACE)
+            v1.create_namespaced_pod(namespace=NAMESPACE, body=pod)
+            print(f"  [{node}] pod {pod_name} created", flush=True)
+
+            deadline = time.time() + POD_TIMEOUT
+            phase = "Unknown"
+            while time.time() < deadline:
+                p = v1.read_namespaced_pod(name=pod_name, namespace=NAMESPACE)
+                phase = p.status.phase or "Unknown"
+                if phase in ("Succeeded", "Failed"):
+                    break
+                time.sleep(3)
+
+            if phase not in ("Succeeded", "Failed"):
+                raise RuntimeError(f"pod timed out in phase {phase}")
+
+            raw_logs = v1.read_namespaced_pod_log(name=pod_name, namespace=NAMESPACE)
+
         except Exception as e:
-            logs = f"ERROR: {e}"
+            print(f"  [{node}] error: {e}", flush=True)
+            return NodeResult(node=node, error=str(e))
 
-        try:
-            v1.delete_namespaced_pod(
-                name=pod_name, namespace=NAMESPACE,
-                body=client.V1DeleteOptions(grace_period_seconds=0),
-            )
-        except Exception:
-            pass
+        finally:
+            try:
+                v1.delete_namespaced_pod(
+                    name=pod_name,
+                    namespace=NAMESPACE,
+                    body=client.V1DeleteOptions(grace_period_seconds=0),
+                )
+                print(f"  [{node}] pod {pod_name} deleted", flush=True)
+            except Exception as cleanup_err:
+                print(f"  [{node}] cleanup failed: {cleanup_err}", flush=True)
 
-        return logs
+        return parse_output(node, raw_logs)
 
-    def parse_packages(output: str):
-        held = []
-        packages = []
+    def parse_output(node: str, output: str) -> NodeResult:
+        held, packages = [], []
         for line in output.strip().splitlines():
             if line.startswith("HELD:"):
                 held = [p for p in line[5:].split() if p]
@@ -110,98 +178,179 @@ data:
             name = line.split("/")[0]
             if name in held:
                 continue
-            is_security = "noble-security" in line
-            packages.append({"name": name, "security": is_security})
-        return packages, held
+            packages.append(Package(
+                name=name,
+                security="noble-security" in line,
+            ))
+        return NodeResult(node=node, packages=packages, held=held)
 
-    def get_cves_for_package(pkg_name: str) -> list:
+    # ── CVE lookup — cached across nodes ─────────────────────────────────────
+    _cve_cache: dict[str, CveInfo] = {}
+
+    def get_cve_info(pkg_name: str) -> CveInfo:
+        """
+        Query notices.json with exact package name.
+        Filters notices that include noble in release_packages.
+        Results are cached — packages shared across nodes are only looked up once.
+        """
+        if pkg_name in _cve_cache:
+            return _cve_cache[pkg_name]
+
+        info = CveInfo()
+
         try:
             r = requests.get(
-                CVE_API,
-                params={"package": pkg_name, "release": "noble", "limit": 5},
-                timeout=CVE_TIMEOUT,
+                NOTICES_API,
+                params={"details": pkg_name, "limit": 5},
+                timeout=API_TIMEOUT,
             )
-            if r.status_code != 200:
-                return []
-            data = r.json()
-            cves = []
-            for cve in data.get("cves", []):
-                cve_id   = cve.get("id", "")
-                priority = (cve.get("ubuntu_priority") or cve.get("priority", "unknown")).lower()
-                cvss     = cve.get("cvss3_score") or cve.get("cvss_score", "")
-                if cve_id:
-                    cves.append({"id": cve_id, "priority": priority, "cvss": cvss})
-            return cves
-        except Exception:
-            return []
+            if r.status_code == 200:
+                for notice in r.json().get("notices", []):
+                    if RELEASE not in notice.get("release_packages", {}):
+                        continue
+                    info.usn     = notice.get("id", "")
+                    info.cve_ids = notice.get("cves_ids", [])[:3]
+                    break
 
-    def format_cve_line(cves: list) -> str:
-        parts = []
-        for cve in cves[:3]:
-            p     = cve["priority"]
-            emoji = PRIORITY_MAP.get(p, ('❓', 0, COLOR_BLUE))[0]
-            score = f" ({cve['cvss']})" if cve['cvss'] else ""
-            parts.append(f"{emoji}`{cve['id']}`{score} {p}")
-        return " · ".join(parts)
-
-    def truncate(text: str, limit: int = 1000) -> str:
-        return text if len(text) <= limit else text[:limit - 3] + "…"
-
-    # ── Main scan loop ────────────────────────────────────────────────────────
-    fields       = []
-    worst_weight = 0
-    has_security = False
-    has_updates  = False
-    has_error    = False
-
-    for node in NODES:
-        print(f"[{node}] Scanning…", flush=True)
-        try:
-            output             = scan_node(node)
-            packages, held     = parse_packages(output)
-            total              = len(packages)
-            sec_pkgs           = [p for p in packages if p["security"]]
-
-            if total == 0:
-                value = "✅ Up to date"
-                if held:
-                    value += f"\n⏸ Held (excluded): `{' '.join(held)}`"
-            else:
-                has_updates = True
-                non_sec     = total - len(sec_pkgs)
-                value       = f"📦 **{total}** upgradable"
-                if held:
-                    value += f" *(held excluded: {len(held)})*"
-                if non_sec:
-                    value += f"\n📋 **{non_sec}** non-security"
-
-                if sec_pkgs:
-                    has_security = True
-                    value += f"\n🔒 **{len(sec_pkgs)}** security updates:\n"
-                    cve_lines = []
-                    for pkg in sec_pkgs[:MAX_CVE_PKGS]:
-                        cves = get_cves_for_package(pkg["name"])
-                        if cves:
-                            for cve in cves:
-                                w = PRIORITY_MAP.get(cve["priority"], ('', 0, 0))[1]
-                                worst_weight = max(worst_weight, w)
-                            cve_lines.append(f"• `{pkg['name']}` — {format_cve_line(cves)}")
-                        else:
-                            cve_lines.append(f"• `{pkg['name']}`")
-                        time.sleep(0.3)
-                    if len(sec_pkgs) > MAX_CVE_PKGS:
-                        cve_lines.append(f"*…and {len(sec_pkgs) - MAX_CVE_PKGS} more*")
-                    value += "\n".join(cve_lines)
+            if info.cve_ids:
+                cve_id = info.cve_ids[0]
+                cr = requests.get(
+                    CVES_API,
+                    params={"q": cve_id, "limit": 1},
+                    timeout=API_TIMEOUT,
+                )
+                if cr.status_code == 200:
+                    for cve in cr.json().get("cves", []):
+                        if cve.get("id") == cve_id:
+                            info.priority = (cve.get("priority") or "unknown").lower()
+                            cvss3 = cve.get("cvss3")
+                            if isinstance(cvss3, dict):
+                                score = cvss3.get("score") or cvss3.get("base_score")
+                                if score:
+                                    info.cvss = str(score)
+                            break
 
         except Exception as e:
-            has_error = True
-            value = f"❌ Scan failed: `{str(e)[:200]}`"
+            print(f"  CVE lookup failed for {pkg_name}: {e}", flush=True)
 
-        fields.append({"name": node, "value": truncate(value), "inline": False})
-        print(f"[{node}] Done.", flush=True)
+        _cve_cache[pkg_name] = info
+        return info
 
-    # ── Determine embed colour ────────────────────────────────────────────────
-    if has_error:
+    # ── Helpers ───────────────────────────────────────────────────────────────
+    def plural(n: int, word: str) -> str:
+        return f"{n} {word}" if n == 1 else f"{n} {word}s"
+
+    def truncate(text: str, limit: int = 1000) -> str:
+        return text if len(text) <= limit else text[:limit - 3] + "..."
+
+    def build_field(result: NodeResult) -> dict:
+        """Build a single Discord embed field for one node."""
+        if not result.ok:
+            return {
+                "name":   result.node,
+                "value":  f"**Status:** Scan error\n```{result.error[:200]}```",
+                "inline": False,
+            }
+
+        lines = []
+        sec  = result.security_packages
+        nsec = result.non_security_count
+
+        if not result.packages:
+            lines.append("**Status:** Clean")
+        elif sec:
+            lines.append("**Status:** Security updates required")
+        else:
+            lines.append("**Status:** Updates available")
+
+        if result.held:
+            held_fmt = "  ".join(f"`{h}`" for h in result.held)
+            lines.append(f"**Held:** {held_fmt}")
+
+        if nsec > 0:
+            lines.append(f"**Pending:** {plural(nsec, 'non-security update')}")
+
+        if sec:
+            # Build aligned security table inside a code block
+            cve_rows = []
+            for pkg in sec[:MAX_SEC_PKGS]:
+                info = get_cve_info(pkg.name)
+                w = PRIORITY_WEIGHT.get(info.priority, 0)
+                result._worst = max(getattr(result, '_worst', 0), w)
+                cve_ids = ", ".join(info.cve_ids[:2]) if info.cve_ids else info.usn or "—"
+                priority = info.priority.upper() if info.priority != "unknown" else "—"
+                cvss     = info.cvss if info.cvss else "—"
+                cve_rows.append((pkg.name, priority, cvss, cve_ids))
+
+            # Column widths
+            w_name = max(len(r[0]) for r in cve_rows)
+            w_pri  = max(len(r[1]) for r in cve_rows)
+            w_cvss = max(len(r[2]) for r in cve_rows)
+
+            header = (
+                f"{'Package'.ljust(w_name)}  {'Severity'.ljust(w_pri)}  "
+                f"{'CVSS'.ljust(w_cvss)}  CVE"
+            )
+            divider = "-" * len(header)
+            rows = [
+                f"{name.ljust(w_name)}  {pri.ljust(w_pri)}  {cvss.ljust(w_cvss)}  {cve}"
+                for name, pri, cvss, cve in cve_rows
+            ]
+            if len(sec) > MAX_SEC_PKGS:
+                rows.append(f"... and {len(sec) - MAX_SEC_PKGS} more")
+
+            table = "\n".join([header, divider] + rows)
+            lines.append(f"\n**Security ({len(sec)}):**\n```\n{table}\n```")
+
+        return {
+            "name":   result.node,
+            "value":  truncate("\n".join(lines)),
+            "inline": False,
+        }
+
+    # ── Parallel node scan ────────────────────────────────────────────────────
+    print("Starting parallel node scans...", flush=True)
+    node_results: dict[str, NodeResult] = {}
+
+    with ThreadPoolExecutor(max_workers=len(NODES)) as executor:
+        futures = {executor.submit(scan_node, node): node for node in NODES}
+        for future in as_completed(futures):
+            node = futures[future]
+            try:
+                node_results[node] = future.result()
+                print(f"[{node}] scan complete", flush=True)
+            except Exception as e:
+                node_results[node] = NodeResult(node=node, error=str(e))
+                print(f"[{node}] scan failed: {e}", flush=True)
+
+    # ── Build embed ───────────────────────────────────────────────────────────
+    results  = [node_results.get(n, NodeResult(node=n, error="no result")) for n in NODES]
+    fields   = [build_field(r) for r in results]
+
+    errors      = [r.node for r in results if not r.ok]
+    sec_nodes   = [r.node for r in results if r.ok and r.security_packages]
+    upd_nodes   = [r.node for r in results if r.ok and r.packages and not r.security_packages]
+    clean_nodes = [r.node for r in results if r.ok and not r.packages]
+
+    worst_weight = max(
+        (PRIORITY_WEIGHT.get(get_cve_info(p.name).priority, 0)
+         for r in results if r.ok
+         for p in r.security_packages),
+        default=0,
+    )
+
+    # Cluster-level summary for embed description
+    if errors:
+        description = f"Scan error on {', '.join(errors)}."
+    elif sec_nodes:
+        description = f"Security updates required on {', '.join(sec_nodes)}."
+    elif upd_nodes:
+        description = f"Non-security updates pending on {', '.join(upd_nodes)}."
+    else:
+        description = "All nodes are up to date."
+
+    # Embed colour
+    if errors:
         color = COLOR_RED
     elif worst_weight >= 5:
         color = COLOR_RED
@@ -209,21 +358,21 @@ data:
         color = COLOR_ORANGE
     elif worst_weight >= 3:
         color = COLOR_YELLOW
-    elif has_updates:
+    elif upd_nodes or sec_nodes:
         color = COLOR_BLUE
     else:
         color = COLOR_GREEN
 
-    # ── Post Discord embed ────────────────────────────────────────────────────
+    # ── Discord payload ───────────────────────────────────────────────────────
     timestamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     payload = {
         "embeds": [{
-            "title": "🔍 nebulahvelvet — APT Security Scan",
-            "description": "Weekly package audit across all cluster nodes",
-            "color": color,
-            "fields": fields,
-            "footer": {"text": "nebulahvelvet.no | apt-scanner"},
-            "timestamp": timestamp,
+            "title":       "nebulahvelvet — APT Security Report",
+            "description": description,
+            "color":       color,
+            "fields":      fields,
+            "footer":      {"text": "nebulahvelvet.no  ·  apt-scanner"},
+            "timestamp":   timestamp,
         }]
     }
 

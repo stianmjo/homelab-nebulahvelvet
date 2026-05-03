@@ -4,15 +4,19 @@ metadata:
   name: apt-scanner
   namespace: apt-scanner
 spec:
-  schedule: "0 8 * * 1,5"
+  schedule: "0 8 * * 1,5"   # Monday and Friday at 08:00 Oslo time
   timeZone: "Europe/Oslo"
-  concurrencyPolicy: Forbid
+  concurrencyPolicy: Forbid  # never run two scans simultaneously
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 3
   jobTemplate:
     spec:
       backoffLimit: 1
       ttlSecondsAfterFinished: 86400
+      # Kill the job if it runs for more than 15 minutes total.
+      # Prevents hung jobs from blocking the next scheduled run.
+      # 3 nodes x 90s pod timeout + CVE API calls + pip install = well under 900s.
+      activeDeadlineSeconds: 900
       template:
         spec:
           serviceAccountName: apt-scanner
@@ -26,6 +30,7 @@ spec:
                 - -c
                 - |
                   pip install kubernetes requests --quiet --no-cache-dir \
+                    --root-user-action=ignore --disable-pip-version-check \
                   && python /scripts/scan.py
               env:
                 - name: TZ

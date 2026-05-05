@@ -5,7 +5,10 @@ metadata:
   namespace: traefik-internal
 spec:
   interval: 15m
-  crds: CreateReplace
+  install:
+    crds: CreateReplace
+  upgrade:
+    crds: CreateReplace
   chart:
     spec:
       chart: traefik

@@ -40,8 +40,8 @@ spec:
       name: traefik-internal
 
     service:
-      type: LoadBalancer
       spec:
+        type: LoadBalancer
         loadBalancerIP: 10.0.2.83
         externalTrafficPolicy: Local
 

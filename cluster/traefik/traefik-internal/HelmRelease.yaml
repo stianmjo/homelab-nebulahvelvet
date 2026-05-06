@@ -12,7 +12,7 @@ spec:
   chart:
     spec:
       chart: traefik
-      version: "39.0.9"
+      version: "40.0.0"
       sourceRef:
         kind: HelmRepository
         name: traefik
@@ -40,8 +40,8 @@ spec:
       name: traefik-internal
 
     service:
-      type: LoadBalancer
       spec:
+        type: LoadBalancer
         loadBalancerIP: 10.0.2.83
         externalTrafficPolicy: Local
 

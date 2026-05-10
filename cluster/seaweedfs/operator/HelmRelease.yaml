@@ -9,7 +9,7 @@ spec:
     spec:
       chart: seaweedfs-operator
       # renovate: datasource=helm depName=seaweedfs-operator registryUrl=https://seaweedfs.github.io/seaweedfs-operator/
-      version: "0.1.21" 
+      version: "0.1.22" 
       sourceRef:
         kind: HelmRepository
         name: seaweedfs-operator

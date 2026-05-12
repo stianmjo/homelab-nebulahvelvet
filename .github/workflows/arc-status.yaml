@@ -2,8 +2,6 @@ name: ARC status
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 20 * * *'
 
 jobs:
   determine-runner:

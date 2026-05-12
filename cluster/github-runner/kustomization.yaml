@@ -6,3 +6,4 @@ resources:
   - HelmRepository.yaml
   - controller
   - scaler
+  - arc-status-cronjob.yaml

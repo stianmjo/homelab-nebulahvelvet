@@ -1,0 +1,47 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: arc-status-trigger
+  namespace: github-runner
+spec:
+  schedule: "0 19 * * *"
+  timeZone: "Europe/Oslo"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 3600
+      activeDeadlineSeconds: 60
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: dispatch
+              image: alpine/k8s:1.36.0
+              command:
+                - sh
+                - -c
+                - |
+                  curl -sf -X POST \
+                    -H "Authorization: token ${GITHUB_PAT}" \
+                    -H "Accept: application/vnd.github+json" \
+                    -H "X-GitHub-Api-Version: 2022-11-28" \
+                    https://api.github.com/repos/stianmjo/homelab-nebulahvelvet/actions/workflows/arc-status.yaml/dispatches \
+                    -d '{"ref":"main"}' \
+                  && echo "Dispatched arc-status workflow" \
+                  || echo "Dispatch failed"
+              env:
+                - name: GITHUB_PAT
+                  valueFrom:
+                    secretKeyRef:
+                      name: arc-github-auth
+                      key: github_token
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 200m
+                  memory: 128Mi

@@ -17,7 +17,7 @@ spec:
           restartPolicy: Never
           containers:
             - name: renovate
-              image: ghcr.io/renovatebot/renovate:43.180.2
+              image: ghcr.io/renovatebot/renovate:43.195.1
               resources:
                 requests:
                   memory: "512Mi"

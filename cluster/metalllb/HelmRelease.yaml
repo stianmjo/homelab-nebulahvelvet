@@ -25,4 +25,8 @@ spec:
     remediation:
       retries: 3
 
-  values: {}
+  values:
+    frr-k8s:
+      prometheus:
+        serviceMonitor:
+          enabled: false

@@ -5,6 +5,16 @@ metadata:
   namespace: kubevirt
 spec:
   imagePullPolicy: IfNotPresent
+  configuration:
+    developerConfiguration:
+      featureGates:
+        - HotplugVolumes
+        - HostDisk
+        - VMExport
+        - Snapshot
+        - ExpandDisks
+        - ExperimentalIgnitionSupport
+        - LiveMigration
   workloadUpdateStrategy:
     workloadUpdateMethods:
       - LiveMigrate

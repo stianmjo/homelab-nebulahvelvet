@@ -88,3 +88,20 @@ rules:
     resources:
       - network-attachment-definitions
     verbs: ["get", "list", "watch"]
+
+  - apiGroups: ["kubevirt-manager.io"]
+    resources:
+      - images
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  - apiGroups: ["snapshot.kubevirt.io"]
+    resources:
+      - virtualmachinesnapshots
+      - virtualmachinesnapshotcontents
+      - virtualmachinerestores
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  - apiGroups: ["export.kubevirt.io"]
+    resources:
+      - virtualmachineexports
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]

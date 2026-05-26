@@ -22,7 +22,7 @@ spec:
       containers:
         - name: kubevirt-manager
           # renovate: datasource=docker depName=kubevirtmanager/kubevirt-manager
-          image: kubevirtmanager/kubevirt-manager:1.4.1
+          image: kubevirtmanager/kubevirt-manager:1.5.3
           imagePullPolicy: IfNotPresent
           ports:
             - name: http

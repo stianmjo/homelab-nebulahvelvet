@@ -3,3 +3,4 @@ kind: Kustomization
 resources:
   - kubevirt-cr.yaml
   - cdi-cr.yaml
+  - ubuntu-noble-image.yaml

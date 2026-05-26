@@ -24,4 +24,5 @@ resources:
   - gjallar
   - apt-scanner
   - external-secrets
+  - kubevirt
   - kubevirt-manager

@@ -1,0 +1,23 @@
+apiVersion: kubevirt-manager.io/v1
+kind: Image
+metadata:
+  name: ubuntu-noble
+  namespace: kubevirt-vms
+spec:
+  type: http
+  readableName: "Ubuntu 24.04 LTS (Noble) - Server"
+  readableDescription: "Ubuntu 24.04 LTS Noble Numbat - minimal cloud image"
+  http:
+    url: "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
+---
+apiVersion: kubevirt-manager.io/v1
+kind: Image
+metadata:
+  name: ubuntu-noble-desktop
+  namespace: kubevirt-vms
+spec:
+  type: http
+  readableName: "Ubuntu 24.04 LTS (Noble) - Desktop"
+  readableDescription: "Ubuntu 24.04 LTS Noble Numbat - desktop via cloud-init"
+  http:
+    url: "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"

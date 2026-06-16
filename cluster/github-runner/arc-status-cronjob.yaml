@@ -19,7 +19,7 @@ spec:
           restartPolicy: Never
           containers:
             - name: dispatch
-              image: alpine/k8s:1.36.1
+              image: alpine/k8s:1.36.2
               command:
                 - sh
                 - -c

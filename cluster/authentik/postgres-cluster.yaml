@@ -5,7 +5,7 @@ metadata:
   namespace: authentik
 spec:
   instances: 3
-  primaryUpdateStrategy: supervised
+  primaryUpdateStrategy: unsupervised
 
   bootstrap:
     initdb:

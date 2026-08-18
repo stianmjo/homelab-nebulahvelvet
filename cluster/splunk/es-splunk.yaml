@@ -1,0 +1,20 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: splunk-secret
+  namespace: splunk
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: proton-relay
+  target:
+    name: splunk-secret          # k8s Secret the StatefulSet references
+    creationPolicy: Owner
+  data:
+    - secretKey: password
+      remoteRef:
+        key: "splunk/password"
+    - secretKey: hec-token
+      remoteRef:
+        key: "splunk/hec-token"

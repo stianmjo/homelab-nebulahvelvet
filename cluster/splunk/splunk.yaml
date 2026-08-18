@@ -1,0 +1,139 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: splunk
+  namespace: splunk
+spec:
+  serviceName: splunk
+  replicas: 1
+  selector:
+    matchLabels:
+      app: splunk
+  template:
+    metadata:
+      labels:
+        app: splunk
+    spec:
+      securityContext:
+        # 41812 = the "splunk" uid/gid baked into the official image.
+        # fsGroup makes the fresh Longhorn PVCs writable by that group.
+        # If the pod hits permission errors on first boot, this is the knob.
+        fsGroup: 41812
+        fsGroupChangePolicy: OnRootMismatch
+      containers:
+        - name: splunk
+          # renovate: datasource=docker depName=splunk/splunk
+          image: splunk/splunk:10.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: web
+              containerPort: 8000
+            - name: hec
+              containerPort: 8088
+            - name: mgmt
+              containerPort: 8089
+            - name: s2s
+              containerPort: 9997
+          env:
+            - name: SPLUNK_START_ARGS
+              value: "--accept-license"
+            # Required on 10.x images (drop this if you pin a 9.x tag instead):
+            - name: SPLUNK_GENERAL_TERMS
+              value: "--accept-sgt-current-at-splunk-com"
+            - name: TZ
+              value: Europe/Oslo
+            - name: SPLUNK_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: splunk-secret
+                  key: password
+            # Auto-enables HTTP Event Collector on :8088 with this token,
+            # so other services can POST logs without manual UI setup.
+            - name: SPLUNK_HEC_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: splunk-secret
+                  key: hec-token
+          readinessProbe:
+            tcpSocket:
+              port: web
+            initialDelaySeconds: 90
+            periodSeconds: 15
+            failureThreshold: 40   # first boot runs Ansible; can take minutes
+          livenessProbe:
+            tcpSocket:
+              port: mgmt
+            initialDelaySeconds: 300
+            periodSeconds: 30
+            failureThreshold: 12
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: "2"
+              memory: 4Gi
+          volumeMounts:
+            - name: etc
+              mountPath: /opt/splunk/etc    # config / license state
+            - name: var
+              mountPath: /opt/splunk/var    # indexes (hot/warm = block, OK on Longhorn)
+  volumeClaimTemplates:
+    - metadata:
+        name: etc
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: longhorn-retain
+        resources:
+          requests:
+            storage: 2Gi
+    - metadata:
+        name: var
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: longhorn-retain
+        resources:
+          requests:
+            storage: 20Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: splunk
+  namespace: splunk
+spec:
+  type: ClusterIP
+  selector:
+    app: splunk
+  ports:
+    - name: web
+      port: 8000
+      targetPort: web
+    - name: hec
+      port: 8088
+      targetPort: hec
+    - name: s2s
+      port: 9997
+      targetPort: s2s
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: splunk
+  namespace: splunk
+  annotations:
+    kubernetes.io/ingress.class: traefik-internal
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+  ingressClassName: traefik-internal
+  rules:
+    - host: splunk.local.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: splunk
+                port:
+                  number: 8000

@@ -17,3 +17,5 @@ resources:
   - authentik
   - apt-scanner
   - external-secrets
+  - monitoring
+  - splunk

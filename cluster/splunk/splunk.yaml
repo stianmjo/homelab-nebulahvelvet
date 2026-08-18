@@ -23,7 +23,7 @@ spec:
       containers:
         - name: splunk
           # renovate: datasource=docker depName=splunk/splunk
-          image: splunk/splunk:10.0.0
+          image: splunk/splunk:10.4.2
           imagePullPolicy: IfNotPresent
           ports:
             - name: web

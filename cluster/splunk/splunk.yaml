@@ -78,6 +78,19 @@ spec:
               mountPath: /opt/splunk/etc    # config / license state
             - name: var
               mountPath: /opt/splunk/var    # indexes (hot/warm = block, OK on Longhorn)
+            # Declarative index definitions, delivered as a Splunk app.
+            # Mounted read-only at the app's local/ ONLY (not the app root),
+            # so Splunk can still create/own the rest of the app dir on the
+            # persistent etc volume. Splunk reads indexes.conf from here at boot.
+            - name: indexes-app
+              mountPath: /opt/splunk/etc/apps/nebula_indexes/local
+              readOnly: true
+      volumes:
+        # Sources the splunk-indexes ConfigMap (indexes.conf + app.conf).
+        # Edit that ConfigMap to add/change indexes; Git stays source of truth.
+        - name: indexes-app
+          configMap:
+            name: splunk-indexes
   volumeClaimTemplates:
     - metadata:
         name: etc

@@ -1,0 +1,42 @@
+# cluster/splunk/indexes-configmap.yaml
+#
+# Declarative Splunk index definition, delivered as a Splunk "app".
+# The splunk/splunk image is provisioned by splunk-ansible; the supported
+# way to add an index is an app containing indexes.conf on persistent storage.
+# We mount THIS ConfigMap at the app's local/ dir (see StatefulSet patch),
+# NOT over /opt/splunk/etc/apps (that would hide built-in apps and break Splunk).
+#
+# Add more indexes by adding more [stanza] blocks to indexes.conf below,
+# then `flux reconcile` + restart the pod.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: splunk-indexes
+  namespace: splunk
+data:
+  # Marks this directory as a valid Splunk app so Splunk loads it.
+  app.conf: |
+    [install]
+    state = enabled
+
+    [package]
+    check_for_updates = false
+
+    [ui]
+    is_visible = false
+    label = Nebula Indexes
+
+  # The index definition itself. One [stanza] per index.
+  # homePath/coldPath/thawedPath use $SPLUNK_DB, which resolves to the
+  # persistent 'var' PVC — so index DATA lands on longhorn-retain, as intended.
+  indexes.conf: |
+    [k8s]
+    homePath   = $SPLUNK_DB/k8s/db
+    coldPath   = $SPLUNK_DB/k8s/colddb
+    thawedPath = $SPLUNK_DB/k8s/thaweddb
+    # frozenTimePeriodInSecs = seconds before data is aged out (deleted, since
+    # no coldToFrozen archive is set). 2592000 = 30 days. Tune to taste.
+    frozenTimePeriodInSecs = 2592000
+    # maxTotalDataSizeMB caps the index size on disk. 5120 = 5 GB.
+    # Protects your longhorn-retain volume from an unbounded log firehose.
+    maxTotalDataSizeMB = 5120

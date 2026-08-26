@@ -25,37 +25,44 @@ spec:
       interval: 12h
   values:
     # ---- Grafana (exposed internally at grafana.local.net) ----
-    grafana.ini:
-      server:
-        root_url: "http://grafana.local.net"
-      auth:
-        oauth_auto_login: false
-        disable_login_form: true
-      auth.basic:
-        enabled: false
-      auth.generic_oauth:
+    grafana:
+      defaultDashboardsTimezone: Europe/Oslo
+      envFromSecret: grafana-oauth
+      admin:
+        existingSecret: grafana-admin
+        userKey: admin-user
+        passwordKey: admin-password
+      grafana.ini:
+        server:
+          root_url: "http://grafana.local.net"
+        auth:
+          oauth_auto_login: false
+          disable_login_form: true
+        auth.basic:
+          enabled: false
+        auth.generic_oauth:
+          enabled: true
+          name: authentik
+          scopes: "openid email profile"
+          auth_url: "https://auth.nebulahvelvet.no/application/o/authorize/"
+          token_url: "https://auth.nebulahvelvet.no/application/o/token/"
+          api_url: "https://auth.nebulahvelvet.no/application/o/userinfo/"
+          signout_redirect_url: "https://auth.nebulahvelvet.no/application/o/grafana/end-session/"
+          role_attribute_path: "contains(groups[*], 'grafana_admins') && 'Admin' || contains(groups[*], 'grafana_users') && 'Viewer' || 'Viewer'"
+          allow_sign_up: true
+      persistence:
         enabled: true
-        name: authentik
-        scopes: "openid email profile"
-        auth_url: "https://auth.nebulahvelvet.no/application/o/authorize/"
-        token_url: "https://auth.nebulahvelvet.no/application/o/token/"
-        api_url: "https://auth.nebulahvelvet.no/application/o/userinfo/"
-        signout_redirect_url: "https://auth.nebulahvelvet.no/application/o/grafana/end-session/"
-        role_attribute_path: "contains(groups[*], 'grafana_admins') && 'Admin' || contains(groups[*], 'grafana_users') && 'Viewer' || 'Viewer'"
-        allow_sign_up: true
-    persistence:
-      enabled: true
-      storageClassName: longhorn
-      size: 5Gi
-    ingress:
-      enabled: true
-      ingressClassName: traefik-internal
-      annotations:
-        kubernetes.io/ingress.class: traefik-internal
-        traefik.ingress.kubernetes.io/router.entrypoints: web
-      hosts:
-        - grafana.local.net
-      path: /
+        storageClassName: longhorn
+        size: 5Gi
+      ingress:
+        enabled: true
+        ingressClassName: traefik-internal
+        annotations:
+          kubernetes.io/ingress.class: traefik-internal
+          traefik.ingress.kubernetes.io/router.entrypoints: web
+        hosts:
+          - grafana.local.net
+        path: /
 
     # ---- Prometheus ----
     prometheus:

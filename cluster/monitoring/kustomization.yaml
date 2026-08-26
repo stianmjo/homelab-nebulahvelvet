@@ -5,3 +5,4 @@ resources:
   - HelmRelease.yaml
   - application-podmonitors.yaml
   - es-grafana-admin.yaml
+  - configmap-grafana.yaml

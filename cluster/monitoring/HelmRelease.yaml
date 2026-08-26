@@ -27,10 +27,26 @@ spec:
     # ---- Grafana (exposed internally at grafana.local.net) ----
     grafana:
       defaultDashboardsTimezone: Europe/Oslo
+      envFromSecret: grafana-oauth
       admin:
-        existingSecret: grafana-admin   # applied manually (see grafana-admin-secret-template.yaml)
+        existingSecret: grafana-admin
         userKey: admin-user
         passwordKey: admin-password
+      grafana.ini:
+        server:
+          root_url: "http://grafana.local.net"
+        auth:
+          oauth_auto_login: false
+        auth.generic_oauth:
+          enabled: true
+          name: authentik
+          scopes: "openid email profile"
+          auth_url: "https://auth.nebulahvelvet.no/application/o/authorize/"
+          token_url: "https://auth.nebulahvelvet.no/application/o/token/"
+          api_url: "https://auth.nebulahvelvet.no/application/o/userinfo/"
+          signout_redirect_url: "https://auth.nebulahvelvet.no/application/o/grafana/end-session/"
+          role_attribute_path: "contains(groups[*], 'grafana_admins') && 'Admin' || contains(groups[*], 'grafana_users') && 'Viewer' || 'Viewer'"
+          allow_sign_up: true
       persistence:
         enabled: true
         storageClassName: longhorn

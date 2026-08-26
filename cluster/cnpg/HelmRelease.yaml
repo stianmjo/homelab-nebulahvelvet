@@ -20,4 +20,6 @@ spec:
   upgrade:
     remediation:
       retries: 3
-  values: {}
+  values:
+    monitoring:
+      podMonitorEnabled: true

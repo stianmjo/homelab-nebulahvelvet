@@ -54,6 +54,8 @@ spec:
         # Traefik ServiceMonitors later without touching this release.
         serviceMonitorSelectorNilUsesHelmValues: false
         podMonitorSelectorNilUsesHelmValues: false
+        serviceMonitorNamespaceSelector: {}
+        podMonitorNamespaceSelector: {}
         ruleSelectorNilUsesHelmValues: false
         probeSelectorNilUsesHelmValues: false
         scrapeConfigSelectorNilUsesHelmValues: false

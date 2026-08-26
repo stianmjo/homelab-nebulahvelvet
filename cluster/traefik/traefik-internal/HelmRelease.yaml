@@ -75,6 +75,14 @@ spec:
           default: true
         exposedPort: 9100
         protocol: TCP
+
+    metrics:
+      service:
+        enabled: true
+      serviceMonitor:
+        enabled: true
+        namespace: monitoring
+        interval: 30s
     
     ingressRoute:
       dashboard:

@@ -26,6 +26,12 @@ spec:
       retries: 3
 
   values:
+    prometheus:
+      podMonitor:
+        enabled: true
+      namespace: monitoring
+      serviceAccount: kube-prometheus-stack-prometheus
+
     frr-k8s:
       prometheus:
         serviceMonitor:

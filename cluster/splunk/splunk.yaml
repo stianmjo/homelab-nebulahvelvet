@@ -29,6 +29,13 @@ spec:
         - name: seed-indexes-app
           image: splunk/splunk:10.4.2
           imagePullPolicy: IfNotPresent
+          securityContext:
+            # Run as the splunk uid/gid (41812) baked into the image, which
+            # owns the etc PVC — so the cp into etc/apps succeeds. Running as
+            # root here would also work but this matches final ownership and
+            # avoids a separate chown.
+            runAsUser: 41812
+            runAsGroup: 41812
           command:
             - /bin/bash
             - -c
@@ -39,7 +46,6 @@ spec:
               cp /cm/indexes.conf "$APP_LOCAL/indexes.conf"
               cp /cm/app.conf     "$APP_LOCAL/app.conf"
               # Ownership matches the splunk uid/gid baked into the image.
-              chown -R 41812:41812 /opt/splunk/etc/apps/nebula_indexes
               echo "Seeded nebula_indexes app:"
               ls -la "$APP_LOCAL"
           volumeMounts:

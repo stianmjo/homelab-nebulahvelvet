@@ -32,9 +32,19 @@ spec:
 
     server:
       replicas: 2
+      metrics:
+        enabled: true
+        serviceMonitor:
+          enabled: true
+          interval: 30s
 
     worker:
       replicas: 2
+      metrics:
+        enabled: true
+        serviceMonitor:
+          enabled: true
+          interval: 30s
 
     postgresql:
       enabled: false

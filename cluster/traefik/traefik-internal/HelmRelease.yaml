@@ -76,13 +76,15 @@ spec:
         exposedPort: 9100
         protocol: TCP
 
-    metrics:
-      service:
-        enabled: true
-      serviceMonitor:
-        enabled: true
-        namespace: monitoring
-        interval: 30s
+        metrics:
+          prometheus:
+            addRoutersLabels: true       # per-route (Host) metrics — off by default
+            service:
+              enabled: true              # creates the metrics Service
+            serviceMonitor:
+              enabled: true              # creates the ServiceMonitor CRD
+              interval: 30s
+              # no `namespace:` — let it sit beside the Service in traefik-external
     
     ingressRoute:
       dashboard:

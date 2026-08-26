@@ -69,13 +69,6 @@ spec:
         expose:
           default: false
 
-      metrics:
-        port: 9100
-        expose:
-          default: true
-        exposedPort: 9100
-        protocol: TCP
-
         metrics:
           prometheus:
             addRoutersLabels: true       # per-route (Host) metrics — off by default

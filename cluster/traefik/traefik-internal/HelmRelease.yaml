@@ -8,7 +8,13 @@ spec:
   install:
     crds: CreateReplace
   upgrade:
-    crds: CreateReplace
+    # Skip on upgrade: the Traefik CRDs are cluster-scoped and SHARED with
+    # the traefik-external release. CreateReplace on both made them fight over
+    # the same CRD objects. Skip stops that; update CRDs manually when a new
+    # chart ships schema changes:
+    #   kubectl apply --server-side --force-conflicts -k \
+    #     https://github.com/traefik/traefik-helm-chart/traefik/crds/
+    crds: Skip
   chart:
     spec:
       chart: traefik
@@ -18,6 +24,7 @@ spec:
         name: traefik
         namespace: flux-system
       interval: 1h
+
   values:
     deployment:
       replicas: 2
@@ -69,16 +76,28 @@ spec:
         expose:
           default: false
 
-        metrics:
-          prometheus:
-            addRoutersLabels: true       # per-route (Host) metrics — off by default
-            service:
-              enabled: true              # creates the metrics Service
-            serviceMonitor:
-              enabled: true              # creates the ServiceMonitor CRD
-              interval: 30s
-              # no `namespace:` — let it sit beside the Service in traefik-external
-    
+      # Metrics entrypoint (Prometheus exporter listens here). Port 9100 is the
+      # chart default. expose.default: false keeps 9100 OFF the LoadBalancer —
+      # the ServiceMonitor scrapes the pod directly, so no need to publish it.
+      metrics:
+        port: 9100
+        expose:
+          default: false
+        exposedPort: 9100
+        protocol: TCP
+
+    # Prometheus metrics — TOP-LEVEL key under values (NOT under ports).
+    # This was the schema error: the block had been nested under ports.traefik.
+    metrics:
+      prometheus:
+        addRoutersLabels: true       # per-route (Host) metrics — off by default
+        service:
+          enabled: true              # creates the metrics Service
+        serviceMonitor:
+          enabled: true              # creates the ServiceMonitor CRD
+          interval: 30s
+          # no namespace: — let it sit beside the Service in traefik-internal.
+
     ingressRoute:
       dashboard:
         enabled: true

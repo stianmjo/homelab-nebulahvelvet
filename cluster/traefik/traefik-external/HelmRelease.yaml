@@ -8,7 +8,13 @@ spec:
   install:
     crds: CreateReplace
   upgrade:
-    crds: CreateReplace
+    # Skip on upgrade: the Traefik CRDs are cluster-scoped and SHARED with
+    # the traefik-internal release. CreateReplace on both made them fight over
+    # the same CRD objects ("the object has been modified" conflict). Skip stops
+    # that; update CRDs manually when a new chart ships schema changes:
+    #   kubectl apply --server-side --force-conflicts -k \
+    #     https://github.com/traefik/traefik-helm-chart/traefik/crds/
+    crds: Skip
   chart:
     spec:
       chart: traefik
@@ -23,13 +29,13 @@ spec:
     deployment:
       replicas: 2
 
-      # ✅ ADDED: writable storage for Traefik plugin manager (/plugins-storage)
+      # Writable storage for Traefik plugin manager (/plugins-storage)
       # Fixes: "mkdir plugins-storage: read-only file system"
       additionalVolumes:
         - name: plugins-storage
           emptyDir: {}
 
-    # ✅ ADDED: mount that volume into the Traefik container
+    # Mount that volume into the Traefik container
     additionalVolumeMounts:
       - name: plugins-storage
         mountPath: /plugins-storage
@@ -65,11 +71,11 @@ spec:
         wrangler:
           moduleName: github.com/holysoles/bot-wrangler-traefik-plugin
           version: v0.10.1
-      
+
         fail2ban:
           moduleName: github.com/tomMoulard/fail2ban
           version: v0.8.9
-          
+
     additionalArguments:
       - "--api.insecure=true"
 
@@ -91,16 +97,30 @@ spec:
         expose:
           default: false
 
-        metrics:
-          prometheus:
-            addRoutersLabels: true       # per-route (Host) metrics — off by default
-            service:
-              enabled: true              # creates the metrics Service
-            serviceMonitor:
-              enabled: true              # creates the ServiceMonitor CRD
-              interval: 30s
-              # no `namespace:` — let it sit beside the Service in traefik-external
-    
+      # Metrics entrypoint (Prometheus exporter listens here). Port 9100 is the
+      # chart default. expose.default: false keeps 9100 OFF the LoadBalancer —
+      # the ServiceMonitor scrapes the pod directly, so no need to publish it.
+      metrics:
+        port: 9100
+        expose:
+          default: false
+        exposedPort: 9100
+        protocol: TCP
+
+    # Prometheus metrics — TOP-LEVEL key under values (NOT under ports).
+    # Both flags default to false; the metrics.prometheus block itself is
+    # enabled by default, so we just turn on the Service + ServiceMonitor.
+    metrics:
+      prometheus:
+        addRoutersLabels: true       # per-route (Host) metrics — off by default
+        service:
+          enabled: true              # creates the metrics Service
+        serviceMonitor:
+          enabled: true              # creates the ServiceMonitor CRD
+          interval: 30s
+          # no namespace: — let it sit beside the Service in traefik-external;
+          # Prometheus scrapes ServiceMonitors in all namespaces already.
+
     ingressRoute:
       dashboard:
         enabled: false

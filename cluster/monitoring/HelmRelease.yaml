@@ -47,6 +47,16 @@ spec:
 
     # ---- Prometheus ----
     prometheus:
+      ingress:
+        enabled: true
+        ingressClassName: traefik-internal
+        annotations:
+          kubernetes.io/ingress.class: traefik-internal
+          traefik.ingress.kubernetes.io/router.entrypoints: web
+        hosts:
+          - prometheus.local.net
+        path: /
+
       prometheusSpec:
         retention: 15d
         # Scrape ServiceMonitors/PodMonitors/Rules from ALL namespaces,

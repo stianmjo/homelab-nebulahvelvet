@@ -6,3 +6,4 @@ resources:
   - application-podmonitors.yaml
   - es-grafana-admin.yaml
   - configmap-grafana.yaml
+  - externalsecret-grafana-oauth.yaml

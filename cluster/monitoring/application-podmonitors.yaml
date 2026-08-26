@@ -1,0 +1,35 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: jellyfin
+  namespace: monitoring
+spec:
+  namespaceSelector:
+    matchNames:
+      - media
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: jellyfin
+  podMetricsEndpoints:
+    - port: service
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: uptime-kuma
+  namespace: monitoring
+spec:
+  namespaceSelector:
+    matchNames:
+      - uptime-kuma
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: uptime-kuma
+  podMetricsEndpoints:
+    - targetPort: 3001
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s

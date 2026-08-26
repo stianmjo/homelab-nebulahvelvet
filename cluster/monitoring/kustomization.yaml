@@ -3,4 +3,5 @@ kind: Kustomization
 resources:
   - HelmRepository.yaml
   - HelmRelease.yaml
+  - application-podmonitors.yaml
   - es-grafana-admin.yaml

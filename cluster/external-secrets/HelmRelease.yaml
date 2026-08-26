@@ -19,3 +19,9 @@ spec:
     crds: CreateReplace
   values:
     replicaCount: 1
+
+    serviceMonitor:
+      enabled: true
+      namespace: monitoring
+      interval: 30s
+      scrapeTimeout: 25s

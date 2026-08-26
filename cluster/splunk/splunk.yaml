@@ -17,9 +17,37 @@ spec:
       securityContext:
         # 41812 = the "splunk" uid/gid baked into the official image.
         # fsGroup makes the fresh Longhorn PVCs writable by that group.
-        # If the pod hits permission errors on first boot, this is the knob.
         fsGroup: 41812
         fsGroupChangePolicy: OnRootMismatch
+      initContainers:
+        # Copies indexes.conf + app.conf from the ConfigMap onto the WRITABLE
+        # etc PVC BEFORE Splunk boots. This avoids mounting a read-only volume
+        # inside /opt/splunk/etc — which deadlocks Ansible's recursive chown
+        # (change_splunk_directory_owner) during provisioning.
+        # Result: the app is a normal splunk-owned dir on the persistent PVC,
+        # re-seeded from Git-managed ConfigMap on every (re)start.
+        - name: seed-indexes-app
+          image: splunk/splunk:10.4.2
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+              APP_LOCAL=/opt/splunk/etc/apps/nebula_indexes/local
+              mkdir -p "$APP_LOCAL"
+              cp /cm/indexes.conf "$APP_LOCAL/indexes.conf"
+              cp /cm/app.conf     "$APP_LOCAL/app.conf"
+              # Ownership matches the splunk uid/gid baked into the image.
+              chown -R 41812:41812 /opt/splunk/etc/apps/nebula_indexes
+              echo "Seeded nebula_indexes app:"
+              ls -la "$APP_LOCAL"
+          volumeMounts:
+            - name: etc
+              mountPath: /opt/splunk/etc
+            - name: indexes-cm
+              mountPath: /cm
+              readOnly: true
       containers:
         - name: splunk
           # renovate: datasource=docker depName=splunk/splunk
@@ -47,8 +75,7 @@ spec:
                 secretKeyRef:
                   name: splunk-secret
                   key: password
-            # Auto-enables HTTP Event Collector on :8088 with this token,
-            # so other services can POST logs without manual UI setup.
+            # Auto-enables HTTP Event Collector on :8088 with this token.
             - name: SPLUNK_HEC_TOKEN
               valueFrom:
                 secretKeyRef:
@@ -78,17 +105,10 @@ spec:
               mountPath: /opt/splunk/etc    # config / license state
             - name: var
               mountPath: /opt/splunk/var    # indexes (hot/warm = block, OK on Longhorn)
-            # Declarative index definitions, delivered as a Splunk app.
-            # Mounted read-only at the app's local/ ONLY (not the app root),
-            # so Splunk can still create/own the rest of the app dir on the
-            # persistent etc volume. Splunk reads indexes.conf from here at boot.
-            - name: indexes-app
-              mountPath: /opt/splunk/etc/apps/nebula_indexes/local
-              readOnly: true
       volumes:
-        # Sources the splunk-indexes ConfigMap (indexes.conf + app.conf).
-        # Edit that ConfigMap to add/change indexes; Git stays source of truth.
-        - name: indexes-app
+        # ConfigMap is mounted ONLY into the initContainer (at /cm), never into
+        # the main container's etc tree — so it can't collide with Ansible chown.
+        - name: indexes-cm
           configMap:
             name: splunk-indexes
   volumeClaimTemplates:

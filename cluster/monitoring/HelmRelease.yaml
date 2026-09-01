@@ -80,6 +80,7 @@ spec:
 
       prometheusSpec:
         retention: 15d
+        retentionSize: "32GiB"
         # Scrape ServiceMonitors/PodMonitors/Rules from ALL namespaces,
         # not just those the chart labels itself. Lets you add Longhorn/CNPG/
         # Traefik ServiceMonitors later without touching this release.
@@ -104,7 +105,7 @@ spec:
               accessModes: ["ReadWriteOnce"]
               resources:
                 requests:
-                  storage: 20Gi
+                  storage: 40Gi
 
     # ---- Alertmanager ----
     alertmanager:

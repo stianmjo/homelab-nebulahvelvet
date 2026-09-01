@@ -26,6 +26,8 @@ spec:
   values:
     # ---- Grafana (exposed internally at grafana.local.net) ----
     grafana:
+      deploymentStrategy:
+        type: Recreate
       defaultDashboardsTimezone: Europe/Oslo
       envFromSecret: grafana-oauth
       admin:

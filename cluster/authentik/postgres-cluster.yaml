@@ -19,4 +19,4 @@ spec:
     storageClass: longhorn
 
   monitoring:
-    enablePodMonitor: true
+    enablePodMonitor: false

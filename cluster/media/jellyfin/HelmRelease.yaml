@@ -89,7 +89,7 @@ spec:
       config:
         enabled: true
         accessMode: ReadWriteOnce
-        size: 20Gi
+        size: 40Gi
         annotations: {}
         storageClass: longhorn-retain
 

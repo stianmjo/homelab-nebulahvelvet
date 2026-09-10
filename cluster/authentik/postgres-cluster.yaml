@@ -14,6 +14,20 @@ spec:
       secret:
         name: authentik-db-credentials
 
+  postgresql:
+    parameters:
+      # HA replication slots are on by default and retain unlimited WAL (-1).
+      # A standby down past this cap gets its slot invalidated and must be
+      # rebuilt (~180MB DB, cheap). 2026-09-10: 4.7G pinned WAL filled 5Gi.
+      max_slot_wal_keep_size: "2GB"
+      # CNPG default is logical; authentik has no logical replication.
+      # Changing this triggers a rolling restart.
+      wal_level: "replica"
+      # CNPG default 5min forces a segment switch on any activity. No continuous
+      # backup is configured, so it only burns WAL. Revisit if barman is added
+      # (this value becomes the RPO).
+      archive_timeout: "1h"
+
   storage:
     size: 10Gi
     storageClass: longhorn

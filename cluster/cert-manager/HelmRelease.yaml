@@ -30,9 +30,4 @@ spec:
       enabled: true
 
     prometheus:
-      enabled: true
-      podmonitor:
-        enabled: true
-        namespace: monitoring
-        interval: 60s
-        scrapeTimeout: 30s
+      enabled: false

@@ -8,3 +8,4 @@ resources:
   - webhook-repo.yaml
   - webhook-release.yaml
   - clusterissuer.yaml
+  - domeneshop-externalsecret.yaml

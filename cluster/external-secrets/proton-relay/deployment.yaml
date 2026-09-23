@@ -19,6 +19,9 @@ spec:
     spec:
       automountServiceAccountToken: false   # relay never talks to the Kubernetes API
       securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000          # image USER is the name "bridge"; kubelet needs a number to verify non-root
+        runAsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
       containers:
@@ -41,11 +44,14 @@ spec:
                 name: proton-relay
           securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true   # verified: relay writes only to /session
             capabilities:
               drop: ["ALL"]
           volumeMounts:
             - name: session
               mountPath: /session
+            - name: tmp
+              mountPath: /tmp
           livenessProbe:
             httpGet:
               path: /health          # process alive
@@ -69,6 +75,9 @@ spec:
         - name: session
           emptyDir:
             sizeLimit: 64Mi
+        - name: tmp                        # safety net for Python/pass-cli temp files
+          emptyDir:
+            sizeLimit: 16Mi
 ---
 apiVersion: v1
 kind: Service

@@ -17,6 +17,10 @@ spec:
       labels:
         app: proton-relay
     spec:
+      automountServiceAccountToken: false   # relay never talks to the Kubernetes API
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: proton-relay
           # renovate: datasource=docker depName=ghcr.io/stianmjo/proton-relay
@@ -28,22 +32,31 @@ spec:
               value: "Kubernetes"
             - name: PROTON_PASS_KEY_PROVIDER
               value: "fs"
+            - name: PROTON_PASS_SESSION_DIR     # disposable: relay logs out + in on every start
+              value: "/session"
             - name: TZ
               value: "Europe/Oslo"
           envFrom:
             - secretRef:
                 name: proton-relay
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: session
+              mountPath: /session
           livenessProbe:
             httpGet:
-              path: /health
+              path: /health          # process alive
               port: 8080
             initialDelaySeconds: 15
             periodSeconds: 30
           readinessProbe:
             httpGet:
-              path: /health
+              path: /ready           # 503 until authenticated to Proton
               port: 8080
-            initialDelaySeconds: 15
+            initialDelaySeconds: 5
             periodSeconds: 10
           resources:
             requests:
@@ -52,6 +65,10 @@ spec:
             limits:
               cpu: 200m
               memory: 128Mi
+      volumes:
+        - name: session
+          emptyDir:
+            sizeLimit: 64Mi
 ---
 apiVersion: v1
 kind: Service

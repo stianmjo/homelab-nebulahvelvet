@@ -20,7 +20,7 @@ spec:
         # nginx then serves only from memory; NFS is never read per request.
         - name: load-media
           # renovate: datasource=docker depName=busybox
-          image: busybox:1.37.0
+          image: busybox:1.38.0
           # cp -r (not -a): don't carry NAS ownership/perms (660, 1000:988)
           # into RAM — nginx workers run as uid 101 and need world-read.
           command: ["sh", "-c", "cp -r /nfs/. /media/ && chmod -R a+rX /media && ls -lh /media"]

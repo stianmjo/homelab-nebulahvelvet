@@ -60,6 +60,27 @@ data:
           height: 100dvh;           /* real visible height on mobile */
           object-fit: cover;        /* landscape: fill screen */
         }
+        /* "Tap for sound" hint, shown only while muted */
+        #hint {
+          position: fixed;
+          left: 50%;
+          bottom: calc(24px + env(safe-area-inset-bottom));
+          transform: translateX(-50%);
+          padding: 10px 18px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.12);
+          color: #fff;
+          font: 500 15px/1 system-ui, -apple-system, sans-serif;
+          letter-spacing: 0.02em;
+          backdrop-filter: blur(6px);
+          -webkit-backdrop-filter: blur(6px);
+          pointer-events: none;
+          opacity: 0;
+          transition: opacity 0.4s;
+          animation: pulse 2s ease-in-out infinite;
+        }
+        #hint.show { opacity: 1; }
+        @keyframes pulse { 50% { background: rgba(255, 255, 255, 0.22); } }
         @media (orientation: portrait) {
           /* Portrait/mobile: shrink and center. Black bg hides the edges.
              Tune --mobile-scale (0.5 = half screen width, 1 = full width). */
@@ -77,6 +98,7 @@ data:
     </head>
     <body>
       <video id="v" playsinline preload="auto"></video>
+      <div id="hint">🔊 Tap for sound</div>
       <script>
         // Files on the PVC. Add/remove names here.
         const videos = ['beer1.mp4', 'beer2.mp4', 'beer3.mp4', 'beer4.mp4', 'beer5.mp4', 'beer6.mp4', 'beer7.mp4', 'beer8.mp4'];
@@ -109,9 +131,12 @@ data:
           // unmute on the first click/tap/keypress anywhere
           v.muted = true;
           v.play();
+          const hint = document.getElementById('hint');
+          hint.classList.add('show');
           const unmute = () => {
             v.muted = false;
             v.play();
+            hint.classList.remove('show');
             ['click', 'touchstart', 'keydown'].forEach(e =>
               document.removeEventListener(e, unmute));
           };

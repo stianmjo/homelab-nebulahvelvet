@@ -1,0 +1,38 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: beer
+  namespace: hadelandraas
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-domeneshop
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    traefik.ingress.kubernetes.io/router.middlewares: traefik-external-f2b-beer@kubernetescrd,traefik-external-public-chain@kubernetescrd
+spec:
+  ingressClassName: traefik-external
+  rules:
+    - host: hadelandraas.no
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: beer
+                port:
+                  number: 80
+    - host: beer.hadelandraas.no
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: beer
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - hadelandraas.no
+        - beer.hadelandraas.no
+      secretName: beer-tls

@@ -1,0 +1,15 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: f2b-beer
+  namespace: traefik-external
+spec:
+  plugin:
+    fail2ban:
+      statuscode: "403,404,429"
+      findtime: 10m
+      maxretry: 10
+      bantime: 1h
+      urlregexps:
+        - regexp: /media/
+          mode: allow

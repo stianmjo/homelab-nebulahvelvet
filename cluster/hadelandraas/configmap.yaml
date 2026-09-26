@@ -1,0 +1,108 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: beer-web
+  namespace: hadelandraas
+data:
+  # Apex page: hadelandraas.no -> scalable background image (background.png)
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>hadelandraas</title>
+      <style>
+        html, body {
+          margin: 0;
+          height: 100%;
+          background: #000 url('/media/background.png') no-repeat center center fixed;
+          background-size: cover;
+          overflow: hidden;
+        }
+      </style>
+    </head>
+    <body></body>
+    </html>
+  # beer subdomain page: beer.hadelandraas.no -> full-screen background video
+  beer.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>beer</title>
+      <style>
+        html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+        video {
+          position: fixed;
+          top: 50%; left: 50%;
+          min-width: 100%; min-height: 100%;
+          width: auto; height: auto;
+          transform: translate(-50%, -50%);
+          object-fit: cover;
+          z-index: -1;
+        }
+      </style>
+    </head>
+    <body>
+      <video id="v" autoplay loop playsinline preload="auto">
+        <source src="/media/beer.mp4" type="video/mp4">
+      </video>
+      <script>
+        const v = document.getElementById('v');
+        // Try autoplay WITH sound first
+        v.muted = false;
+        v.play().catch(() => {
+          // Browser blocked audible autoplay -> play muted now,
+          // unmute on the first click/tap/keypress anywhere
+          v.muted = true;
+          v.play();
+          const unmute = () => {
+            v.muted = false;
+            v.play();
+            ['click', 'touchstart', 'keydown'].forEach(e =>
+              document.removeEventListener(e, unmute));
+          };
+          ['click', 'touchstart', 'keydown'].forEach(e =>
+            document.addEventListener(e, unmute));
+        });
+      </script>
+    </body>
+    </html>
+  default.conf: |
+    # Apex: hadelandraas.no -> image page
+    server {
+      listen 80 default_server;
+      server_name hadelandraas.no;
+      root /usr/share/nginx/html;
+      index index.html;
+
+      location / {
+        try_files $uri /index.html;
+      }
+
+      location /media/ {
+        alias /media/;
+        add_header Accept-Ranges bytes;
+        expires 7d;
+      }
+    }
+
+    # Subdomain: beer.hadelandraas.no -> video page
+    server {
+      listen 80;
+      server_name beer.hadelandraas.no;
+      root /usr/share/nginx/html;
+      index beer.html;
+
+      location / {
+        try_files $uri /beer.html;
+      }
+
+      location /media/ {
+        alias /media/;
+        add_header Accept-Ranges bytes;
+        expires 7d;
+      }
+    }

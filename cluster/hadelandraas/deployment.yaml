@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: beer
+  namespace: hadelandraas
+  labels:
+    app: beer
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: beer
+  template:
+    metadata:
+      labels:
+        app: beer
+    spec:
+      initContainers:
+        # Copy media from NFS into RAM once at pod start.
+        # nginx then serves only from memory; NFS is never read per request.
+        - name: load-media
+          # renovate: datasource=docker depName=busybox
+          image: busybox:1.37.0
+          command: ["sh", "-c", "cp -a /nfs/. /media/ && ls -lh /media"]
+          volumeMounts:
+            - name: nfs
+              mountPath: /nfs
+              readOnly: true
+            - name: media
+              mountPath: /media
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 500m
+              memory: 64Mi
+      containers:
+        - name: nginx
+          # renovate: datasource=docker depName=nginx
+          image: nginx:1.29.1-alpine
+          ports:
+            - name: http
+              containerPort: 80
+          env:
+            - name: TZ
+              value: Europe/Oslo
+          volumeMounts:
+            - name: web
+              mountPath: /usr/share/nginx/html/index.html
+              subPath: index.html
+              readOnly: true
+            - name: web
+              mountPath: /usr/share/nginx/html/beer.html
+              subPath: beer.html
+              readOnly: true
+            - name: web
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
+              readOnly: true
+            - name: media
+              mountPath: /media
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              # tmpfs (RAM emptyDir) counts against this limit.
+              # Must be >= media sizeLimit + ~128Mi nginx headroom.
+              memory: 768Mi
+      volumes:
+        - name: web
+          configMap:
+            name: beer-web
+        - name: nfs
+          persistentVolumeClaim:
+            claimName: hadelandraas
+            readOnly: true
+        - name: media
+          emptyDir:
+            medium: Memory
+            sizeLimit: 512Mi

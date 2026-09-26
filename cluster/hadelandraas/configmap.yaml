@@ -105,7 +105,7 @@ data:
         // Files on the PVC. Add/remove names here.
         const videos = ['beer1.mp4', 'beer2.mp4', 'beer3.mp4', 'beer4.mp4', 'beer5.mp4', 'beer6.mp4', 'beer7.mp4', 'beer8.mp4'];
         const v = document.getElementById('v');
-        v.volume = 0.5;   // 50% (persists across video switches)
+        v.volume = 0.3;   // 30% (persists across video switches)
         let current = -1;
 
         // Random index, never the same video twice in a row
@@ -127,25 +127,40 @@ data:
         // Skip a missing/broken file instead of stalling on black
         v.addEventListener('error', () => setTimeout(playNext, 500));
 
-        // Try autoplay WITH sound first
-        v.muted = false;
-        playNext().catch(() => {
-          // Browser blocked audible autoplay -> play muted now,
-          // unmute on the first click/tap/keypress anywhere
-          v.muted = true;
+        // --- Sound toggle: tap/click anywhere (or M / space) ---
+        const hint = document.getElementById('hint');
+        let hideTimer;
+        const updateHint = () => {
+          clearTimeout(hideTimer);
+          if (v.muted) {
+            hint.textContent = '🔊 Tap for sound';
+            hint.classList.add('show');          // stays visible while muted
+          } else {
+            hint.textContent = '🔇 Tap to mute';
+            hint.classList.add('show');
+            hideTimer = setTimeout(() => hint.classList.remove('show'), 2000);
+          }
+        };
+        const toggle = () => {
+          v.muted = !v.muted;
           v.play();
-          const hint = document.getElementById('hint');
-          hint.classList.add('show');
-          const unmute = () => {
-            v.muted = false;
-            v.play();
-            hint.classList.remove('show');
-            ['click', 'touchstart', 'keydown'].forEach(e =>
-              document.removeEventListener(e, unmute));
-          };
-          ['click', 'touchstart', 'keydown'].forEach(e =>
-            document.addEventListener(e, unmute));
+          updateHint();
+        };
+        // 'click' only (not touchstart too) so one tap = one toggle on mobile
+        document.addEventListener('click', toggle);
+        document.addEventListener('keydown', e => {
+          if (e.key === 'm' || e.key === 'M' || e.key === ' ') { e.preventDefault(); toggle(); }
         });
+
+        // Try autoplay WITH sound first; if blocked, play muted
+        v.muted = false;
+        playNext()
+          .then(() => { /* sound allowed: stay quiet, no hint */ })
+          .catch(() => {
+            v.muted = true;
+            v.play();
+            updateHint();
+          });
       </script>
     </body>
     </html>

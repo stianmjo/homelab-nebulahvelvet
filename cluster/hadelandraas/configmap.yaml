@@ -10,19 +10,27 @@ data:
     <html lang="en">
     <head>
       <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+      <meta name="theme-color" content="#000000">
       <title>hadelandraas</title>
       <style>
-        html, body {
-          margin: 0;
-          height: 100%;
-          background: #000 url('/media/background.png') no-repeat center center fixed;
-          background-size: cover;
-          overflow: hidden;
+        html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+        /* Fixed element instead of background-attachment:fixed (broken on iOS) */
+        .bg {
+          position: fixed;
+          inset: 0;
+          width: 100vw;
+          height: 100vh;
+          height: 100dvh;           /* real visible height on mobile */
+          background: #000 url('/media/background.png') no-repeat center;
+          background-size: cover;   /* landscape: fill screen */
+        }
+        @media (orientation: portrait) {
+          .bg { background-size: contain; }   /* portrait: show whole image */
         }
       </style>
     </head>
-    <body></body>
+    <body><div class="bg"></div></body>
     </html>
   # beer subdomain page: beer.hadelandraas.no -> full-screen background video
   beer.html: |
@@ -30,7 +38,8 @@ data:
     <html lang="en">
     <head>
       <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+      <meta name="theme-color" content="#000000">
       <title>beer</title>
       <style>
         html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
@@ -40,19 +49,54 @@ data:
           inset: 0;
           width: 100vw;
           height: 100vh;
-          object-fit: cover;
+          height: 100dvh;           /* real visible height on mobile */
+          object-fit: cover;        /* landscape: fill screen */
+        }
+        @media (orientation: portrait) {
+          /* Portrait/mobile: shrink and center. Black bg hides the edges.
+             Tune --mobile-scale (0.5 = half screen width, 1 = full width). */
+          :root { --mobile-scale: 0.7; }
+          video {
+            inset: auto;
+            top: 50%; left: 50%;
+            width: calc(100vw * var(--mobile-scale));
+            height: auto;
+            transform: translate(-50%, -50%);
+            object-fit: contain;
+          }
         }
       </style>
     </head>
     <body>
-      <video id="v" autoplay loop playsinline preload="auto">
-        <source src="/media/beer.mp4" type="video/mp4">
-      </video>
+      <video id="v" playsinline preload="auto"></video>
       <script>
+        // Files on the PVC. Add/remove names here.
+        const videos = ['beer1.mp4', 'beer2.mp4', 'beer3.mp4', 'beer4.mp4'];
         const v = document.getElementById('v');
+        let current = -1;
+
+        // Random index, never the same video twice in a row
+        const pick = () => {
+          if (videos.length < 2) return 0;
+          let i;
+          do { i = Math.floor(Math.random() * videos.length); } while (i === current);
+          return i;
+        };
+
+        const playNext = () => {
+          current = pick();
+          v.src = '/media/' + videos[current];
+          return v.play();
+        };
+
+        // When one ends, shuffle to another (mute state is kept)
+        v.addEventListener('ended', playNext);
+        // Skip a missing/broken file instead of stalling on black
+        v.addEventListener('error', () => setTimeout(playNext, 500));
+
         // Try autoplay WITH sound first
         v.muted = false;
-        v.play().catch(() => {
+        playNext().catch(() => {
           // Browser blocked audible autoplay -> play muted now,
           // unmute on the first click/tap/keypress anywhere
           v.muted = true;

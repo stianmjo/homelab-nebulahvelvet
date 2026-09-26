@@ -15,22 +15,30 @@ data:
       <title>hadelandraas</title>
       <style>
         html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
-        /* Fixed element instead of background-attachment:fixed (broken on iOS) */
-        .bg {
+        img {
           position: fixed;
           inset: 0;
           width: 100vw;
           height: 100vh;
           height: 100dvh;           /* real visible height on mobile */
-          background: #000 url('/media/background.png') no-repeat center;
-          background-size: cover;   /* landscape: fill screen */
+          object-fit: cover;        /* landscape: fill screen */
         }
         @media (orientation: portrait) {
-          .bg { background-size: contain; }   /* portrait: show whole image */
+          /* Portrait/mobile: shrink and center. Black bg hides the edges.
+             Tune --mobile-scale (0.5 = half screen width, 1 = full width). */
+          :root { --mobile-scale: 0.7; }
+          img {
+            inset: auto;
+            top: 50%; left: 50%;
+            width: calc(100vw * var(--mobile-scale));
+            height: auto;
+            transform: translate(-50%, -50%);
+            object-fit: contain;
+          }
         }
       </style>
     </head>
-    <body><div class="bg"></div></body>
+    <body><img src="/media/background.png" alt=""></body>
     </html>
   # beer subdomain page: beer.hadelandraas.no -> full-screen background video
   beer.html: |
@@ -71,7 +79,7 @@ data:
       <video id="v" playsinline preload="auto"></video>
       <script>
         // Files on the PVC. Add/remove names here.
-        const videos = ['beer1.mp4', 'beer2.mp4', 'beer3.mp4', 'beer4.mp4'];
+        const videos = ['beer1.mp4', 'beer2.mp4', 'beer3.mp4', 'beer4.mp4', 'beer5.mp4', 'beer6.mp4', 'beer7.mp4', 'beer8.mp4'];
         const v = document.getElementById('v');
         let current = -1;
 

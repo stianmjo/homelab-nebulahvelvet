@@ -78,8 +78,8 @@ spec:
           resources:
             requests:
               cpu: 25m
-              # ~4 videos + image held in tmpfs (~170Mi) + nginx
-              memory: 256Mi
+              # ~8 videos + image held in tmpfs (~330Mi) + nginx
+              memory: 448Mi
             limits:
               cpu: 250m
               # tmpfs (RAM emptyDir) counts against this limit.

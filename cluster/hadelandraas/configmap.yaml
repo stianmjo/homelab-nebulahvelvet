@@ -34,14 +34,13 @@ data:
       <title>beer</title>
       <style>
         html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+        /* No negative z-index: it would paint BEHIND body's black background */
         video {
           position: fixed;
-          top: 50%; left: 50%;
-          min-width: 100%; min-height: 100%;
-          width: auto; height: auto;
-          transform: translate(-50%, -50%);
+          inset: 0;
+          width: 100vw;
+          height: 100vh;
           object-fit: cover;
-          z-index: -1;
         }
       </style>
     </head>

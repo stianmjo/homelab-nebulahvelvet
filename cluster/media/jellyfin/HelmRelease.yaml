@@ -20,6 +20,14 @@ spec:
     nameOverride: ""
     fullnameOverride: "jellyfin"
 
+    image:
+      repository: docker.io/jellyfin/jellyfin
+      # Pinned to run the 12.0 server on chart 3.2.0 (whose appVersion is still 10.11.8).
+      # Not Renovate-tracked: no customManager reads values.image.tag. Bump manually,
+      # or add a regex customManager to renovate.json (separate step).
+      tag: "12.0.0"
+      pullPolicy: IfNotPresent
+
     serviceAccount:
       create: true
       automount: true
@@ -71,7 +79,9 @@ spec:
         port: http
       initialDelaySeconds: 0
       periodSeconds: 10
-      failureThreshold: 30
+      # 60 x 10s = 10 min ceiling, headroom for the one-time 12.0 DB migration.
+      # Safe to drop back to 30 after the upgrade settles.
+      failureThreshold: 60
 
     podSecurityContext:
       supplementalGroups:

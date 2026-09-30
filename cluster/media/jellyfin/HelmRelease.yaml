@@ -22,10 +22,8 @@ spec:
 
     image:
       repository: docker.io/jellyfin/jellyfin
-      # Pinned to run the 12.0 server on chart 3.2.0 (whose appVersion is still 10.11.8).
-      # Not Renovate-tracked: no customManager reads values.image.tag. Bump manually,
-      # or add a regex customManager to renovate.json (separate step).
-      tag: "12.0.0"
+      # renovate: datasource=docker depName=docker.io/jellyfin/jellyfin
+      tag: "12.0.20260908-012347"
       pullPolicy: IfNotPresent
 
     serviceAccount:

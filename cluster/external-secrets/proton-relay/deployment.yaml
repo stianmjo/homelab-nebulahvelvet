@@ -27,7 +27,7 @@ spec:
       containers:
         - name: proton-relay
           # renovate: datasource=docker depName=ghcr.io/stianmjo/proton-relay
-          image: ghcr.io/stianmjo/proton-relay:2.0.0
+          image: ghcr.io/stianmjo/proton-relay:2.0.1
           ports:
             - containerPort: 8080
           env:
@@ -44,9 +44,7 @@ spec:
                 name: proton-relay
           securityContext:
             allowPrivilegeEscalation: false
-            # TEMPORARILY false: pass-cli's session refresh writes a temp file outside /session and /tmp
-            # ("Error opening temp session file"). Re-enable once that path has its own emptyDir.
-            readOnlyRootFilesystem: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
           volumeMounts:

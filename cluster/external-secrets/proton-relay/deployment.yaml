@@ -44,7 +44,9 @@ spec:
                 name: proton-relay
           securityContext:
             allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true   # verified: relay writes only to /session
+            # TEMPORARILY false: pass-cli's session refresh writes a temp file outside /session and /tmp
+            # ("Error opening temp session file"). Re-enable once that path has its own emptyDir.
+            readOnlyRootFilesystem: false
             capabilities:
               drop: ["ALL"]
           volumeMounts:

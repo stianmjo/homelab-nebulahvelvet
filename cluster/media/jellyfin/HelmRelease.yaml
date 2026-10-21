@@ -20,12 +20,6 @@ spec:
     nameOverride: ""
     fullnameOverride: "jellyfin"
 
-    image:
-      repository: docker.io/jellyfin/jellyfin
-      # renovate: datasource=docker depName=docker.io/jellyfin/jellyfin
-      tag: "12.0.20260908-012347"
-      pullPolicy: IfNotPresent
-
     serviceAccount:
       create: true
       automount: true
@@ -77,9 +71,7 @@ spec:
         port: http
       initialDelaySeconds: 0
       periodSeconds: 10
-      # 60 x 10s = 10 min ceiling, headroom for the one-time 12.0 DB migration.
-      # Safe to drop back to 30 after the upgrade settles.
-      failureThreshold: 60
+      failureThreshold: 30
 
     podSecurityContext:
       supplementalGroups:

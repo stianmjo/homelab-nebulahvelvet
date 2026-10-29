@@ -6,6 +6,7 @@ metadata:
 data:
   # Static. Pages/paths come from the hadelandraas-web repo (synced to /git/current),
   # so adding a page never touches this file.
+  # Mounted via subPath: changes here need kubectl -n hadelandraas rollout restart deploy/hadelandraas
   default.conf: |
     # Main site: hadelandraas.no -> hadelandraas-web repo, path-based (/beer/, /tools/, ...)
     server {
@@ -35,6 +36,28 @@ data:
         alias /media/;
         add_header Accept-Ranges bytes;
         expires 7d;
+      }
+
+      # Backend: PocketBase API + admin UI (backend/), over the cluster network.
+      # ^~ so the dotfile/README regex rules above never apply to these paths.
+      # API errors pass through as PocketBase JSON (no proxy_intercept_errors).
+      location ^~ /api/ {
+        proxy_pass http://hadelandraas-backend.hadelandraas.svc.cluster.local:8090;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        # Realtime (server-sent events) needs unbuffered, long-lived responses
+        proxy_buffering off;
+        proxy_read_timeout 1h;
+        client_max_body_size 10m;
+      }
+      location ^~ /_/ {
+        proxy_pass http://hadelandraas-backend.hadelandraas.svc.cluster.local:8090;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
       }
 
       # Site code changes on every merge: always revalidate (cheap ETag 304s)

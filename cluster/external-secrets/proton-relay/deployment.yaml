@@ -20,14 +20,14 @@ spec:
       automountServiceAccountToken: false   # relay never talks to the Kubernetes API
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1000          # image USER is the name "bridge"; kubelet needs a number to verify non-root
+        runAsUser: 1000          # matches the image's USER 1000:1000
         runAsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
       containers:
         - name: proton-relay
           # renovate: datasource=docker depName=ghcr.io/stianmjo/proton-relay
-          image: ghcr.io/stianmjo/proton-relay:2.0.2
+          image: ghcr.io/stianmjo/proton-relay:3.0.0
           ports:
             - containerPort: 8080
           env:
@@ -60,7 +60,7 @@ spec:
             periodSeconds: 30
           readinessProbe:
             httpGet:
-              path: /ready           # 503 until authenticated to Proton
+              path: /ready           # ready once the startup login succeeded
               port: 8080
             initialDelaySeconds: 5
             periodSeconds: 10

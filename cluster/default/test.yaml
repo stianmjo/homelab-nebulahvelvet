@@ -1,0 +1,23 @@
+# Test of proton-relay 3.0.0 with an item at the vault root.
+# Apply by hand, delete when done. Not part of Flux.
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: relay-test
+  namespace: default
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: proton-relay
+  target:
+    name: relay-test
+    creationPolicy: Owner
+  data:
+    # Custom item "test" at the vault root
+    - secretKey: test-api
+      remoteRef:
+        key: test/test-api
+    - secretKey: test2-api
+      remoteRef:
+        key: test/test2-api

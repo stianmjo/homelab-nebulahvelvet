@@ -20,3 +20,4 @@ resources:
 #  - monitoring
 #  - splunk
   - hadelandraas
+  - default

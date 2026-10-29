@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hadelandraas-backend
+  namespace: hadelandraas
+  labels:
+    app: hadelandraas-backend
+spec:
+  # PocketBase is single-process SQLite: never more than 1 replica.
+  # Recreate so the old pod releases the RWO volume before the new one starts.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: hadelandraas-backend
+  template:
+    metadata:
+      labels:
+        app: hadelandraas-backend
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: pocketbase
+          # renovate: datasource=docker depName=ghcr.io/muchobien/pocketbase
+          image: ghcr.io/muchobien/pocketbase:0.40.6
+          # Image entrypoint upserts the superuser from PB_ADMIN_EMAIL/PB_ADMIN_PASSWORD,
+          # then runs "serve --dir=/pb_data" with these flags appended.
+          args:
+            - --origins=https://hadelandraas.no
+            - --encryptionEnv=PB_ENCRYPTION_KEY
+          ports:
+            - name: http
+              containerPort: 8090
+          envFrom:
+            - secretRef:
+                name: hadelandraas-backend
+          env:
+            - name: TZ
+              value: Europe/Oslo
+          volumeMounts:
+            - name: data
+              mountPath: /pb_data
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          # Migrations run before serve starts listening: allow up to ~2 min.
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 5
+            failureThreshold: 24
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: hadelandraas-backend

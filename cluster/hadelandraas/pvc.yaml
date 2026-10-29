@@ -9,4 +9,6 @@ spec:
   storageClassName: nfs-odin
   resources:
     requests:
+      # Everything here is copied into RAM at pod start: keep total media
+      # under the 512Mi tmpfs sizeLimit in deployment.yaml (or raise both).
       storage: 2Gi

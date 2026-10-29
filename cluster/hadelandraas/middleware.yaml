@@ -1,7 +1,7 @@
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
-  name: f2b-beer
+  name: f2b-hadelandraas
   namespace: traefik-external
 spec:
   plugin:
@@ -11,5 +11,8 @@ spec:
       maxretry: 10
       bantime: 1h
       urlregexps:
+        # Static assets and media never count toward a ban
         - regexp: /media/
+          mode: allow
+        - regexp: /assets/
           mode: allow

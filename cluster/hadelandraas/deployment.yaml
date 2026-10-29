@@ -1,29 +1,33 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: beer
+  name: hadelandraas
   namespace: hadelandraas
   labels:
-    app: beer
+    app: hadelandraas
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: beer
+      app: hadelandraas
   template:
     metadata:
       labels:
-        app: beer
+        app: hadelandraas
     spec:
+      securityContext:
+        # Shared group for git-sync (uid 65533), the site emptyDir and the token Secret.
+        fsGroup: 65533
       initContainers:
         # Copy media from NFS into RAM once at pod start.
         # nginx then serves only from memory; NFS is never read per request.
+        # New media on the PVC => kubectl -n hadelandraas rollout restart deploy/hadelandraas
         - name: load-media
           # renovate: datasource=docker depName=busybox
           image: busybox:1.38.0
           # cp -r (not -a): don't carry NAS ownership/perms (660, 1000:988)
-          # into RAM — nginx workers run as uid 101 and need world-read.
-          command: ["sh", "-c", "cp -r /nfs/. /media/ && chmod -R a+rX /media && ls -lh /media"]
+          # into RAM - nginx workers run as uid 101 and need world-read.
+          command: ["sh", "-c", "cp -r /nfs/. /media/ && chmod -R a+rX /media && ls -lhR /media"]
           volumeMounts:
             - name: nfs
               mountPath: /nfs
@@ -48,30 +52,28 @@ spec:
             - name: TZ
               value: Europe/Oslo
           volumeMounts:
-            - name: web
-              mountPath: /usr/share/nginx/html/index.html
-              subPath: index.html
-              readOnly: true
-            - name: web
-              mountPath: /usr/share/nginx/html/beer.html
-              subPath: beer.html
-              readOnly: true
-            - name: web
+            - name: nginx-conf
               mountPath: /etc/nginx/conf.d/default.conf
               subPath: default.conf
+              readOnly: true
+            # Site code from hadelandraas-web, kept current by git-sync (/git/current)
+            - name: site
+              mountPath: /git
               readOnly: true
             - name: media
               mountPath: /media
               readOnly: true
+          # Ready only once the first git sync has landed (/ needs /git/current/index.html)
           readinessProbe:
             httpGet:
               path: /
               port: http
             initialDelaySeconds: 3
             periodSeconds: 10
+          # Liveness only checks nginx itself, so a git/token problem never restart-loops nginx
           livenessProbe:
             httpGet:
-              path: /
+              path: /healthz
               port: http
             initialDelaySeconds: 10
             periodSeconds: 20
@@ -85,10 +87,51 @@ spec:
               # tmpfs (RAM emptyDir) counts against this limit.
               # Must be >= media sizeLimit + ~128Mi nginx headroom.
               memory: 768Mi
+
+        - name: git-sync
+          # renovate: datasource=docker depName=registry.k8s.io/git-sync/git-sync
+          image: registry.k8s.io/git-sync/git-sync:v4.7.1
+          args:
+            - --repo=https://github.com/HadelandRaaS/hadelandraas-web.git
+            - --ref=main
+            - --root=/git
+            - --link=current          # nginx root = /git/current (atomic symlink swap)
+            - --period=30s
+            - --depth=1
+            - --max-failures=-1       # keep retrying forever; last good commit stays served
+            - --username=x-access-token
+            - --password-file=/etc/git-secret/token
+          securityContext:
+            runAsUser: 65533
+            runAsGroup: 65533
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: site
+              mountPath: /git
+            - name: git-secret
+              mountPath: /etc/git-secret
+              readOnly: true
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
       volumes:
-        - name: web
+        - name: nginx-conf
           configMap:
-            name: beer-web
+            name: hadelandraas-nginx
+        - name: site
+          emptyDir:
+            sizeLimit: 256Mi
+        - name: git-secret
+          secret:
+            secretName: hadelandraas-web-git
+            defaultMode: 0440
         - name: nfs
           persistentVolumeClaim:
             claimName: hadelandraas

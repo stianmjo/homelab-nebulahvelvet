@@ -1,202 +1,51 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: beer-web
+  name: hadelandraas-nginx
   namespace: hadelandraas
 data:
-  # Apex page: hadelandraas.no -> scalable background image (background.png)
-  index.html: |
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-      <meta name="theme-color" content="#000000">
-      <title>hadelandraas</title>
-      <style>
-        html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
-        img {
-          /* Desktop/landscape: 80% of the screen, centered, whole image visible */
-          position: fixed;
-          top: 50%; left: 50%;
-          transform: translate(-50%, -50%);
-          width: 80vw;
-          height: 80vh;
-          height: 80dvh;
-          object-fit: contain;
-        }
-        @media (orientation: portrait) {
-          /* Portrait/mobile: shrink and center. Black bg hides the edges.
-             Tune --mobile-scale (0.5 = half screen width, 1 = full width). */
-          :root { --mobile-scale: 0.7; }
-          img {
-            inset: auto;
-            top: 50%; left: 50%;
-            width: calc(100vw * var(--mobile-scale));
-            height: auto;
-            transform: translate(-50%, -50%);
-            object-fit: contain;
-          }
-        }
-      </style>
-    </head>
-    <body><img src="/media/background.png" alt=""></body>
-    </html>
-  # beer subdomain page: beer.hadelandraas.no -> full-screen background video
-  beer.html: |
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-      <meta name="theme-color" content="#000000">
-      <title>beer</title>
-      <style>
-        html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
-        /* No negative z-index: it would paint BEHIND body's black background */
-        video {
-          position: fixed;
-          inset: 0;
-          width: 100vw;
-          height: 100vh;
-          height: 100dvh;           /* real visible height on mobile */
-          object-fit: cover;        /* landscape: fill screen */
-        }
-        /* "Tap for sound" hint, shown only while muted */
-        #hint {
-          position: fixed;
-          left: 50%;
-          bottom: calc(24px + env(safe-area-inset-bottom));
-          transform: translateX(-50%);
-          padding: 10px 18px;
-          border-radius: 999px;
-          background: rgba(255, 255, 255, 0.12);
-          color: #fff;
-          font: 500 15px/1 system-ui, -apple-system, sans-serif;
-          letter-spacing: 0.02em;
-          backdrop-filter: blur(6px);
-          -webkit-backdrop-filter: blur(6px);
-          pointer-events: none;
-          opacity: 0;
-          transition: opacity 0.4s;
-          animation: pulse 2s ease-in-out infinite;
-        }
-        #hint.show { opacity: 1; }
-        @keyframes pulse { 50% { background: rgba(255, 255, 255, 0.22); } }
-        @media (orientation: portrait) {
-          /* Portrait/mobile: shrink and center. Black bg hides the edges.
-             Tune --mobile-scale (0.5 = half screen width, 1 = full width). */
-          :root { --mobile-scale: 0.7; }
-          video {
-            inset: auto;
-            top: 50%; left: 50%;
-            width: calc(100vw * var(--mobile-scale));
-            height: auto;
-            transform: translate(-50%, -50%);
-            object-fit: contain;
-          }
-        }
-      </style>
-    </head>
-    <body>
-      <video id="v" playsinline preload="auto"></video>
-      <div id="hint">🔊 Tap for sound</div>
-      <script>
-        // Files on the PVC. Add/remove names here.
-        const videos = ['beer1.mp4', 'beer2.mp4', 'beer3.mp4', 'beer4.mp4', 'beer5.mp4', 'beer6.mp4', 'beer7.mp4', 'beer8.mp4'];
-        const v = document.getElementById('v');
-        v.volume = 0.3;   // 30% (persists across video switches)
-        let current = -1;
-
-        // Random index, never the same video twice in a row
-        const pick = () => {
-          if (videos.length < 2) return 0;
-          let i;
-          do { i = Math.floor(Math.random() * videos.length); } while (i === current);
-          return i;
-        };
-
-        const playNext = () => {
-          current = pick();
-          v.src = '/media/' + videos[current];
-          return v.play();
-        };
-
-        // When one ends, shuffle to another (mute state is kept)
-        v.addEventListener('ended', playNext);
-        // Skip a missing/broken file instead of stalling on black
-        v.addEventListener('error', () => setTimeout(playNext, 500));
-
-        // --- Sound toggle: tap/click anywhere (or M / space) ---
-        const hint = document.getElementById('hint');
-        let hideTimer;
-        const updateHint = () => {
-          clearTimeout(hideTimer);
-          if (v.muted) {
-            hint.textContent = '🔊 Tap for sound';
-            hint.classList.add('show');          // stays visible while muted
-          } else {
-            hint.textContent = '🔇 Tap to mute';
-            hint.classList.add('show');
-            hideTimer = setTimeout(() => hint.classList.remove('show'), 2000);
-          }
-        };
-        const toggle = () => {
-          v.muted = !v.muted;
-          v.play();
-          updateHint();
-        };
-        // 'click' only (not touchstart too) so one tap = one toggle on mobile
-        document.addEventListener('click', toggle);
-        document.addEventListener('keydown', e => {
-          if (e.key === 'm' || e.key === 'M' || e.key === ' ') { e.preventDefault(); toggle(); }
-        });
-
-        // Try autoplay WITH sound first; if blocked, play muted
-        v.muted = false;
-        playNext()
-          .then(() => { /* sound allowed: stay quiet, no hint */ })
-          .catch(() => {
-            v.muted = true;
-            v.play();
-            updateHint();
-          });
-      </script>
-    </body>
-    </html>
+  # Static. Pages/paths come from the hadelandraas-web repo (synced to /git/current),
+  # so adding a page never touches this file.
   default.conf: |
-    # Apex: hadelandraas.no -> image page
+    # Main site: hadelandraas.no -> hadelandraas-web repo, path-based (/beer/, /tools/, ...)
     server {
       listen 80 default_server;
       server_name hadelandraas.no;
-      root /usr/share/nginx/html;
+      root /git/current;
       index index.html;
 
-      location / {
-        try_files $uri /index.html;
+      # Behind Traefik (TLS terminated there): emit relative redirects
+      # so /beer -> /beer/ doesn't become http://hadelandraas.no:80/beer/
+      absolute_redirect off;
+
+      # Liveness: nginx itself, independent of git sync state
+      location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
       }
 
+      # Never serve dotfiles (.git, .github, .gitignore) or repo housekeeping
+      location ~ (^|/)\. { return 404; }
+      location ~ ^/(README\.md|AGENTS\.md|CLAUDE\.md|_template/|scripts/) { return 404; }
+
+      # Media: from the PVC (copied to RAM at pod start), not from the repo.
+      # Wins over any media/ folder someone commits to the repo.
       location /media/ {
         alias /media/;
         add_header Accept-Ranges bytes;
         expires 7d;
       }
-    }
 
-    # Subdomain: beer.hadelandraas.no -> video page
-    server {
-      listen 80;
-      server_name beer.hadelandraas.no;
-      root /usr/share/nginx/html;
-      index beer.html;
-
+      # Site code changes on every merge: always revalidate (cheap ETag 304s)
       location / {
-        try_files $uri /beer.html;
+        add_header Cache-Control "no-cache";
+        try_files $uri $uri/ =404;
       }
 
-      location /media/ {
-        alias /media/;
-        add_header Accept-Ranges bytes;
-        expires 7d;
+      error_page 404 /404.html;
+      location = /404.html {
+        internal;
+        add_header Cache-Control "no-cache";
       }
     }

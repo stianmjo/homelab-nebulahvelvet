@@ -26,24 +26,64 @@ spec:
         fsGroup: 10001
         seccompProfile:
           type: RuntimeDefault
+      # The image entrypoint (entrypoint.sh) upserts the superuser WITHOUT
+      # --encryptionEnv, so it crashes on every restart once settings are encrypted.
+      # Both containers below call the pocketbase binary directly instead.
+      initContainers:
+        # Upserts the superuser from the secret on every pod start, with the
+        # encryption key, so a Proton Pass password change applies on restart.
+        - name: superuser-upsert
+          # renovate: datasource=docker depName=ghcr.io/muchobien/pocketbase
+          image: ghcr.io/muchobien/pocketbase:0.40.6
+          command: ["/bin/sh", "-c"]
+          args:
+            - >-
+              exec /usr/local/bin/pocketbase superuser upsert
+              "$PB_ADMIN_EMAIL" "$PB_ADMIN_PASSWORD"
+              --dir=/pb_data --encryptionEnv=PB_ENCRYPTION_KEY
+          envFrom:
+            - secretRef:
+                name: hadelandraas-backend
+          volumeMounts:
+            - name: data
+              mountPath: /pb_data
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
       containers:
         - name: pocketbase
           # renovate: datasource=docker depName=ghcr.io/muchobien/pocketbase
           image: ghcr.io/muchobien/pocketbase:0.40.6
-          # Image entrypoint upserts the superuser from PB_ADMIN_EMAIL/PB_ADMIN_PASSWORD,
-          # then runs "serve --dir=/pb_data" with these flags appended.
+          command: ["/usr/local/bin/pocketbase"]
           args:
+            - serve
+            - --http=0.0.0.0:8090
+            - --dir=/pb_data
+            - --publicDir=/pb_public
+            - --hooksDir=/pb_hooks
             - --origins=https://hadelandraas.no
             - --encryptionEnv=PB_ENCRYPTION_KEY
           ports:
             - name: http
               containerPort: 8090
-          envFrom:
-            - secretRef:
-                name: hadelandraas-backend
           env:
             - name: TZ
               value: Europe/Oslo
+            # Only the encryption key: the admin credentials are needed by the
+            # init container alone.
+            - name: PB_ENCRYPTION_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hadelandraas-backend
+                  key: PB_ENCRYPTION_KEY
           volumeMounts:
             - name: data
               mountPath: /pb_data

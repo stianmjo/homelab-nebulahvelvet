@@ -40,7 +40,9 @@ spec:
               memory: 16Mi
             limits:
               cpu: 500m
-              memory: 64Mi
+              # Files written to the RAM emptyDir are charged to THIS container while it copies.
+              # Must be >= media sizeLimit, or the copy gets OOMKilled.
+              memory: 1Gi
       containers:
         - name: nginx
           # renovate: datasource=docker depName=nginx
@@ -80,7 +82,7 @@ spec:
           resources:
             requests:
               cpu: 25m
-              # ~8 videos + image held in tmpfs (~330Mi) + nginx
+              # media held in tmpfs + nginx; raise together with sizeLimit
               memory: 448Mi
             limits:
               cpu: 250m

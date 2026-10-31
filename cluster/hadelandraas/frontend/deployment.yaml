@@ -94,8 +94,12 @@ spec:
           args:
             - --repo=https://github.com/HadelandRaaS/hadelandraas-web.git
             - --ref=main
-            - --root=/git
-            - --link=current          # nginx root = /git/current (atomic symlink swap)
+            # --root is a subdirectory git-sync creates itself, so it is owned by uid 65533.
+            # The emptyDir mount point (/git) is root-owned, and git-sync >= v4.8.0 no longer
+            # sets safe.directory=* by default, so git rejects a repo directly at /git as
+            # "dubious ownership". Upstream README (Volumes) recommends a sub-directory root.
+            - --root=/git/root
+            - --link=/git/current     # nginx root = /git/current (atomic symlink swap, relative target)
             - --period=30s
             - --depth=1
             - --max-failures=-1       # keep retrying forever; last good commit stays served

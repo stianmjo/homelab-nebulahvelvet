@@ -25,13 +25,11 @@ flowchart TB
             mlb["MetalLB<br/>hands out IPs"] --> traefik["Traefik<br/>routes requests"]
         end
 
-        subgraph apps["Apps"]
-            apps1["media, minecraft, status page, websites"]
-        end
+        apps["Apps"]
 
         subgraph platform["Platform"]
             direction LR
-            ak["Authentik<br/>login"] ~~~ certs["cert-manager<br/>TLS"] ~~~ secrets["External Secrets<br/>secrets"] ~~~ netpol["Network policies<br/>firewall"]
+            ak["Authentik<br/>login"] ~~~ kuma["Uptime Kuma<br/>status"] ~~~ certs["cert-manager<br/>TLS"] ~~~ secrets["External Secrets<br/>secrets"] ~~~ netpol["Network policies<br/>firewall"]
         end
 
         subgraph storage["Storage"]
@@ -53,6 +51,7 @@ flowchart TB
 | Front door | MetalLB | Gives Traefik real LAN IPs (`10.0.2.82` public, `10.0.2.83` internal) |
 | Front door | Traefik ×2 | One for the internet, one for the LAN |
 | Platform | Authentik | Single sign-on for everything |
+| Platform | Uptime Kuma | Status page and monitors for every service |
 | Platform | cert-manager | Free Let's Encrypt certificates, renewed automatically |
 | Platform | External Secrets + proton-relay | Pulls every secret out of Proton Pass |
 | Platform | kube-network-policies | Enforces NetworkPolicies so namespaces can't talk freely |

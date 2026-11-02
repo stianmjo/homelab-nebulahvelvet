@@ -78,6 +78,9 @@ spec:
           ports:
             - name: health
               containerPort: 8081
+          env:
+            - name: NGINX_ENTRYPOINT_QUIET_LOGS   # no entrypoint chatter at startup
+              value: "1"
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
@@ -85,7 +88,8 @@ spec:
               drop: ["ALL"]
           volumeMounts:
             - name: health-proxy-conf
-              mountPath: /etc/nginx/conf.d
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
               readOnly: true
             - name: health-proxy-tmp
               mountPath: /tmp

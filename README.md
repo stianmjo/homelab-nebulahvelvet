@@ -5,109 +5,110 @@
 [![Traefik](https://img.shields.io/badge/Traefik-24A1C1?style=flat-square&logo=traefikproxy&logoColor=white)](https://traefik.io)
 [![Authentik](https://img.shields.io/badge/Authentik-FD4B2D?style=flat-square&logo=authentik&logoColor=white)](https://goauthentik.io)
 
-> Bare-metal Kubernetes, reconciled from Git.
+> A bare-metal Kubernetes cluster at home, run entirely from this repo.
 
-Everything under `cluster/` is the desired state. Flux watches `main` and applies it, so the repo is the only way in.
+Four small machines, one Git repo. Everything the cluster runs lives under `cluster/`, and Flux keeps the cluster in sync with `main`. Want to change something? Change the YAML and push.
 
-## Core Platform
+## The big picture
+
+Requests come in at the top and work their way down. Each layer leans on the one below it.
 
 ```mermaid
-flowchart LR
-    git[("GitHub<br/>main")]:::src --> flux{{"Flux"}}:::gitops
+flowchart TB
+    users(["Internet and LAN"])
 
-    subgraph net["Network"]
+    subgraph cluster["Kubernetes cluster, synced from GitHub by Flux"]
         direction TB
-        mlb["MetalLB · L2<br/>10.0.2.80–90"]
-        ext["Traefik external<br/>:443 · *.nebulahvelvet.no"]
-        int["Traefik internal<br/>:80 · *.local.net"]
-        mlb -- ".82" --> ext
-        mlb -- ".83" --> int
+
+        subgraph edge["Front door"]
+            direction LR
+            mlb["MetalLB<br/>hands out IPs"] --> traefik["Traefik<br/>routes requests"]
+        end
+
+        subgraph apps["Apps"]
+            apps1["media, minecraft, status page, websites"]
+        end
+
+        subgraph platform["Platform"]
+            direction LR
+            ak["Authentik<br/>login"] ~~~ certs["cert-manager<br/>TLS"] ~~~ secrets["External Secrets<br/>secrets"] ~~~ netpol["Network policies<br/>firewall"]
+        end
+
+        subgraph storage["Storage"]
+            direction LR
+            lh["Longhorn<br/>disks"] ~~~ sw["SeaweedFS<br/>S3"] ~~~ nfs["NFS<br/>media"] ~~~ pg["CloudNativePG<br/>Postgres"]
+        end
+
+        edge --> apps --> platform --> storage
     end
 
-    subgraph sec["Identity & Trust"]
-        direction TB
-        ak["Authentik<br/>SSO · OIDC · ForwardAuth"]
-        cm["cert-manager<br/>Let's Encrypt DNS-01"]
-        eso["External Secrets"]
-        relay["proton-relay"]
-        relay --> eso
-    end
-
-    subgraph data["Storage"]
-        direction TB
-        lh[("Longhorn<br/>replicated block")]
-        sw[("SeaweedFS<br/>S3 object")]
-        nfs[("NFS<br/>bulk / media")]
-        pg[("CloudNativePG<br/>Postgres")]
-    end
-
-    internet((Internet)):::edge --> mlb
-    lan((LAN)):::edge --> mlb
-    pass[["Proton Pass"]]:::src --> relay
-    dns[["Domeneshop DNS"]]:::src --> cm
-
-    ext -- "middleware chain" --> ak
-    cm -- "TLS secrets" --> ext
-    ak --> pg
-    pg -- "nightly dump" --> sw
-    int --> sw
-
-    flux -.-> net & sec & data
-
-    classDef src fill:#1f2937,stroke:#6b7280,color:#f9fafb
-    classDef edge fill:#0f766e,stroke:#14b8a6,color:#f0fdfa
-    classDef gitops fill:#5468ff,stroke:#3b4fe0,color:#fff
-    style net fill:#24a1c114,stroke:#24a1c1
-    style sec fill:#fd4b2d14,stroke:#fd4b2d
-    style data fill:#f59e0b14,stroke:#f59e0b
+    users --> edge
 ```
 
-| Layer | Component | Role |
+## What's running
+
+| Layer | Piece | What it does |
 |:--|:--|:--|
-| GitOps | Flux v2 | Reconciles `cluster/` from `main`, alerts to Discord |
-| Network | MetalLB | L2 LoadBalancer IPs from `10.0.2.80–90` |
-| Network | Traefik ×2 | External (TLS, bot wrangler, fail2ban, rate limits) and internal LAN, routed by `IngressRoute` only |
-| Trust | cert-manager | Let's Encrypt via DNS-01 on Domeneshop |
-| Trust | External Secrets + proton-relay | Every secret pulled from Proton Pass |
-| Auth | Authentik | SSO with OIDC, SAML and Traefik ForwardAuth |
-| Storage | Longhorn | Replicated block storage; `longhorn-retain` for state that must survive |
-| Storage | SeaweedFS | S3 object storage for backups |
-| Storage | NFS | `nfs-odin` class for media and bulk data |
-| Storage | CloudNativePG | Postgres operator, backing Authentik |
+| Sync | Flux | Watches `main` and applies it. Pings Discord when something changes |
+| Front door | MetalLB | Gives Traefik real LAN IPs (`10.0.2.82` public, `10.0.2.83` internal) |
+| Front door | Traefik ×2 | One for the internet, one for the LAN |
+| Platform | Authentik | Single sign-on for everything |
+| Platform | cert-manager | Free Let's Encrypt certificates, renewed automatically |
+| Platform | External Secrets + proton-relay | Pulls every secret out of Proton Pass |
+| Platform | kube-network-policies | Enforces NetworkPolicies so namespaces can't talk freely |
+| Storage | Longhorn | Replicated disks for anything that needs to keep data |
+| Storage | SeaweedFS | S3 storage, used for backups |
+| Storage | NFS | Big shared storage for media |
+| Storage | CloudNativePG | Postgres databases (Authentik's lives here) |
 
-## Routing
+## How traffic gets in
 
-Two Traefik instances split the edge. **traefik-external** takes `:443` for public hosts. It terminates TLS with cert-manager certificates, and every route passes a middleware chain (bot wrangler, fail2ban, rate and in-flight limits). **traefik-internal** serves `*.local.net` over plain HTTP on the LAN.
+There are two Traefik instances, each with its own IP:
 
-Routes are Traefik `IngressRoute` CRDs; the Kubernetes Ingress provider is disabled. Each route carries `kubernetes.io/ingress.class: traefik-external` or `traefik-internal` to pick its instance. Public routes ship their own `Certificate`. Start from [cluster/template/ingressRoute.yaml](cluster/template/ingressRoute.yaml).
+- **traefik-external** handles public `*.nebulahvelvet.no` sites over HTTPS. Every route passes bot blocking, fail2ban and rate limits before it reaches an app.
+- **traefik-internal** handles `*.local.net` sites on the home network over plain HTTP.
+
+Routes are Traefik `IngressRoute`s; regular Kubernetes Ingress is switched off. Each route picks its Traefik with `kubernetes.io/ingress.class`, and public routes bring their own `certificate.yaml`. To add one, copy [cluster/template/ingressRoute.yaml](cluster/template/ingressRoute.yaml).
+
+## Network policies
+
+Every app namespace starts closed. Nothing can reach its pods except:
+
+- pods in the same namespace
+- the Traefik instance that serves it, on the app's own port only
+
+The secrets path is locked down the hardest. Only External Secrets can talk to proton-relay, and the relay can only make DNS lookups and HTTPS calls out to Proton. Uptime Kuma gets a separate health-only port so it can watch the relay without reaching any secrets.
+
+Policies live next to each app as `networkpolicy.yaml`. If something breaks, reverting that one file's commit fixes it.
 
 ## Secrets
 
-Nothing sensitive lives in Git. Secrets come from a Proton Pass vault through [proton-relay](https://github.com/stianmjo/proton-relay) and into the cluster via External Secrets.
+Nothing secret is stored in Git. Secrets live in a Proton Pass vault, and [proton-relay](https://github.com/stianmjo/proton-relay) hands them to External Secrets, which turns them into Kubernetes Secrets.
 
 ```
-Proton Pass → proton-relay → ClusterSecretStore → ExternalSecret → Secret
+Proton Pass → proton-relay → External Secrets → Kubernetes Secret
 ```
 
-Force a resync:
+To pull a secret again right now:
 
 ```sh
 kubectl annotate externalsecret <name> -n <namespace> force-sync=$(date +%s) --overwrite
 ```
 
-## Layout
+## Where things live
 
 ```
 cluster/
-├── flux/              Flux instance and Discord alerts
-├── metalllb/          IP pool and L2 advertisement
-├── traefik/           External and internal ingress controllers
-├── cert-manager/      ClusterIssuer and Domeneshop DNS-01 webhook
-├── external-secrets/  ESO and the proton-relay bridge
-├── authentik/         SSO with CNPG Postgres and S3 backups
-├── longhorn/          Block storage
-├── seaweedfs/         S3 object storage
-├── nfs-provisioner/   NFS storage class
-├── cnpg/              CloudNativePG operator
-└── …                  Workloads on top of the platform
+├── flux/              Flux itself and Discord alerts
+├── network-policies/  kube-network-policies agent
+├── metalllb/          IP pool for LoadBalancers
+├── traefik/           Internet and LAN routers
+├── cert-manager/      Let's Encrypt via Domeneshop DNS
+├── external-secrets/  External Secrets and proton-relay
+├── authentik/         Single sign-on and its database
+├── longhorn/          Replicated disks
+├── seaweedfs/         S3 storage
+├── nfs-provisioner/   NFS storage
+├── cnpg/              Postgres operator
+└── …                  The apps
 ```

@@ -5,3 +5,4 @@ resources:
   - HelmRepository.yaml
   - HelmRelease.yaml
   - proton-relay
+  - networkpolicy.yaml

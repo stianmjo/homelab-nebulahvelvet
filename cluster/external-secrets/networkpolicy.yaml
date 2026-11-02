@@ -1,0 +1,120 @@
+# Tier 2: only the ESO controller can reach proton-relay's secret API (8080);
+# uptime-kuma only reaches the health sidecar (8081). Relay egress is limited
+# to DNS and HTTPS to the internet (Proton has no stable IPs).
+#
+# kube-apiserver runs hostNetwork on mpc01. Toward pods on other nodes flannel
+# sources it from mpc01's flannel.1 address (10.244.0.0); on mpc01 itself it is
+# root-owned node traffic, which kube-network-policies always allows.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: external-secrets
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+# Everything in the namespace except the relay
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-same-namespace
+  namespace: external-secrets
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app
+        operator: NotIn
+        values: ["proton-relay"]
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-apiserver-to-webhook
+  namespace: external-secrets
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: external-secrets-webhook
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - ipBlock:
+            cidr: 10.0.2.2/32
+        - ipBlock:
+            cidr: 10.244.0.0/32
+      ports:
+        - protocol: TCP
+          port: 10250
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: proton-relay-ingress
+  namespace: external-secrets
+spec:
+  podSelector:
+    matchLabels:
+      app: proton-relay
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: external-secrets
+      ports:
+        - protocol: TCP
+          port: 8080
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: uptime-kuma
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: uptime-kuma
+      ports:
+        - protocol: TCP
+          port: 8081
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: proton-relay-egress
+  namespace: external-secrets
+spec:
+  podSelector:
+    matchLabels:
+      app: proton-relay
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.244.0.0/16   # pods
+              - 10.96.0.0/12    # services (kubeadm serviceSubnet)
+              - 10.0.2.0/24     # nodes / LAN
+      ports:
+        - protocol: TCP
+          port: 443

@@ -8,16 +8,27 @@
   ],
   "dependencyDashboard": false,
   "flux": {
-    "fileMatch": ["^cluster/.+\\.ya?ml$"]
+    "managerFilePatterns": ["/^cluster/.+\\.ya?ml$/"]
   },
   "kubernetes": {
-    "fileMatch": ["^cluster/.+\\.ya?ml$"]
+    "managerFilePatterns": ["/^cluster/.+\\.ya?ml$/"]
   },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Versions the flux/kubernetes managers can't see, marked with '# renovate: datasource=<ds> depName=<name>' on the line above",
+      "managerFilePatterns": ["/^cluster/.+\\.ya?ml$/"],
+      "matchStrings": [
+        "#\\s*renovate:\\s*datasource=(?<datasource>\\S+)\\s+depName=(?<depName>\\S+)(?:\\s+versioning=(?<versioning>\\S+))?\\s*\\n\\s*[\\w.-]+:\\s*\"?(?<currentValue>[^\\s\"]+)\"?"
+      ],
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver-coerced{{/if}}"
+    }
+  ],
   "packageRules": [
     {
-      "description": "Only allow semver-like Docker tags",
+      "description": "Only allow version-like Docker tags (1, 1.2, 1.2.3, v1.2.3.4, with optional -suffix)",
       "matchDatasources": ["docker"],
-      "allowedVersions": "/^v?[0-9]+\\.[0-9]+\\.[0-9]+(\\.[0-9]+)?([-.][0-9A-Za-z]+)*$/"
+      "allowedVersions": "/^v?[0-9]+(\\.[0-9]+){0,3}([-.][0-9A-Za-z]+)*$/"
     },
     {
       "description": "Ignore gjallar - managed manually",

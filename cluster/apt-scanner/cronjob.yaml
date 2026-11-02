@@ -23,7 +23,6 @@ spec:
           restartPolicy: Never
           containers:
             - name: scanner
-              # renovate: datasource=docker depName=python
               image: python:3.12-slim
               command:
                 - /bin/bash

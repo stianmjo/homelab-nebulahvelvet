@@ -12,7 +12,6 @@ spec:
         kind: HelmRepository
         name: bjw-s
         namespace: media
-      # renovate: datasource=helm depName=app-template registryUrl=https://bjw-s-labs.github.io/helm-charts/
       version: "5.3.0"
       interval: 12h
 
@@ -28,8 +27,7 @@ spec:
         containers:
           app:
             image:
-              repository: lscr.io/linuxserver/bazarr
-              # renovate: datasource=docker depName=lscr.io/linuxserver/bazarr
+              repository: ghcr.io/linuxserver/bazarr
               tag: v1.5.4-ls330
             env:
               TZ: Europe/Oslo

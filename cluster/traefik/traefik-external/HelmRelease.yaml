@@ -68,10 +68,12 @@ spec:
       plugins:
         wrangler:
           moduleName: github.com/holysoles/bot-wrangler-traefik-plugin
+          # renovate: datasource=github-tags depName=holysoles/bot-wrangler-traefik-plugin
           version: v0.10.1
 
         fail2ban:
           moduleName: github.com/tomMoulard/fail2ban
+          # renovate: datasource=github-tags depName=tomMoulard/fail2ban
           version: v0.8.9
 
     additionalArguments:

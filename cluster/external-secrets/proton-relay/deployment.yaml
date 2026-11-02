@@ -26,7 +26,6 @@ spec:
           type: RuntimeDefault
       containers:
         - name: proton-relay
-          # renovate: datasource=docker depName=ghcr.io/stianmjo/proton-relay
           image: ghcr.io/stianmjo/proton-relay:3.0.0
           ports:
             - name: http
@@ -75,7 +74,6 @@ spec:
         # Exposes ONLY GET /health and /ready on 8081 so uptime-kuma can be allowed
         # to that port without a network path to the secret endpoints on 8080.
         - name: health-proxy
-          # renovate: datasource=docker depName=nginxinc/nginx-unprivileged
           image: nginxinc/nginx-unprivileged:1.31.7-alpine
           ports:
             - name: health

@@ -1,6 +1,6 @@
 # Vendored from https://github.com/kubernetes-sigs/kube-network-policies/blob/v1.1.3/install.yaml
 # The in-repo Helm chart (0.0.1) ships no RBAC and no NRI mount, so the plain manifest is used.
-# Local changes: CriticalAddonsOnly toleration, renovate comment.
+# Local changes: CriticalAddonsOnly toleration.
 # Enforcement is fail-open (default): if the agent dies, traffic flows unfiltered.
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
@@ -73,7 +73,6 @@ spec:
       serviceAccountName: kube-network-policies
       containers:
       - name: kube-network-policies
-        # renovate: datasource=docker depName=registry.k8s.io/networking/kube-network-policies
         image: registry.k8s.io/networking/kube-network-policies:v1.1.3
         args:
         - /bin/netpol

@@ -52,7 +52,6 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: backup
-              # renovate: datasource=docker depName=alpine/k8s
               image: alpine/k8s:1.37.1
               command:
                 - /bin/bash

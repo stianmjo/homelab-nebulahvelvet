@@ -94,6 +94,20 @@ To pull a secret again right now:
 kubectl annotate externalsecret <name> -n <namespace> force-sync=$(date +%s) --overwrite
 ```
 
+## Updates
+
+Renovate runs nightly inside the cluster and opens a PR for every new version. It finds most versions by itself:
+
+- chart versions in `HelmRelease`s
+- `image:` lines, and `image.repository` / `image.tag` inside `HelmRelease` values
+
+So the rule is simple: **pin an exact version and don't annotate it.** Only when Renovate can't see a version does it get a comment on the line above:
+
+```yaml
+# renovate: datasource=github-tags depName=tomMoulard/fail2ban
+version: v0.8.9
+```
+
 ## Where things live
 
 ```

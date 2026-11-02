@@ -50,21 +50,6 @@ spec:
           http:
             port: 6767
 
-    ingress:
-      app:
-        enabled: true
-        className: traefik-internal
-        annotations:
-          traefik.ingress.kubernetes.io/router.entrypoints: web
-        hosts:
-          - host: bazarr.local.net
-            paths:
-              - path: /
-                pathType: Prefix
-                service:
-                  identifier: app
-                  port: http
-
     persistence:
       config:
         enabled: true

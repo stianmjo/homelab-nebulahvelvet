@@ -50,21 +50,6 @@ spec:
           http:
             port: 8989
 
-    ingress:
-      app:
-        enabled: true
-        className: traefik-internal
-        annotations:
-          traefik.ingress.kubernetes.io/router.entrypoints: web
-        hosts:
-          - host: sonarr.local.net
-            paths:
-              - path: /
-                pathType: Prefix
-                service:
-                  identifier: app
-                  port: http
-
     persistence:
       config:
         enabled: true

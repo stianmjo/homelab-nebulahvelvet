@@ -5,5 +5,5 @@ resources:
   - namespace.yaml
   - HelmRepository.yaml
   - HelmRelease.yaml
-  - ingress.yaml
+  - ingressRoute.yaml
   - fail2ban-middleware.yaml

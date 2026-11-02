@@ -7,6 +7,6 @@ resources:
   - postgres-cluster.yaml
   - postgres-backup-cronjob.yaml
   - media-pvc.yaml
-  - ingress.yaml
+  - ingressRoute.yaml
   - middleware.yaml
 

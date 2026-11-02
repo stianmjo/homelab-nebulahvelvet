@@ -1,0 +1,35 @@
+# Certificate name matches the secret so the cert issued for the old Ingress is reused
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: authentik-tls
+  namespace: authentik
+spec:
+  secretName: authentik-tls
+  dnsNames:
+    - auth.nebulahvelvet.no
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt-domeneshop
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: authentik
+  namespace: authentik
+  annotations:
+    kubernetes.io/ingress.class: traefik-external
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`auth.nebulahvelvet.no`)
+      kind: Rule
+      middlewares:
+        - name: authentik-chain
+          namespace: traefik-external
+      services:
+        - name: authentik-server
+          port: 80
+  tls:
+    secretName: authentik-tls

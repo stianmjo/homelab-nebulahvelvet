@@ -6,13 +6,15 @@ metadata:
 spec:
   plugin:
     fail2ban:
-      statuscode: "403,404,429"
-      findtime: 10m
-      maxretry: 10
-      bantime: 1h
-      urlregexps:
-        # Static assets and media never count toward a ban
-        - regexp: /media/
-          mode: allow
-        - regexp: /assets/
-          mode: allow
+      rules:
+        enabled: true
+        statuscode: "403,404,429"
+        findtime: 10m
+        maxretry: 10
+        bantime: 1h
+        urlregexps:
+          # Static assets and media never count toward a ban
+          - regexp: /media/
+            mode: allow
+          - regexp: /assets/
+            mode: allow

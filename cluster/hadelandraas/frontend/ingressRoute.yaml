@@ -1,0 +1,37 @@
+# Certificate name matches the secret so the cert issued for the old Ingress is reused
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: hadelandraas-tls
+  namespace: hadelandraas
+spec:
+  secretName: hadelandraas-tls
+  dnsNames:
+    - hadelandraas.no
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt-domeneshop
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: hadelandraas
+  namespace: hadelandraas
+  annotations:
+    kubernetes.io/ingress.class: traefik-external
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`hadelandraas.no`)
+      kind: Rule
+      middlewares:
+        - name: f2b-hadelandraas
+          namespace: traefik-external
+        - name: public-chain
+          namespace: traefik-external
+      services:
+        - name: hadelandraas
+          port: http
+  tls:
+    secretName: hadelandraas-tls

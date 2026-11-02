@@ -41,11 +41,9 @@ spec:
         mountPath: /plugins-storage
 
     providers:
+      # All routing is IngressRoute (CRD); no networking.k8s.io Ingress objects remain
       kubernetesIngress:
-        enabled: true
-        ingressClass: traefik-external
-        allowEmptyServices: true
-        allowExternalNameServices: false
+        enabled: false
 
       kubernetesCRD:
         enabled: true
@@ -53,14 +51,14 @@ spec:
         allowCrossNamespace: true
 
     ingressClass:
-      enabled: true
-      isDefaultClass: false
-      name: traefik-external
+      enabled: false
 
     service:
+      # spec.loadBalancerIP is deprecated upstream; MetalLB reads its own annotation
+      annotations:
+        metallb.io/loadBalancerIPs: "10.0.2.82"
       spec:
         type: LoadBalancer
-        loadBalancerIP: 10.0.2.82
         externalTrafficPolicy: Local
 
     api:

@@ -30,3 +30,44 @@ spec:
           port: 8443
           scheme: https
           serversTransport: crafty-skipverify
+---
+# Certificate name matches the secret so the cert issued for the old Ingress is reused
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: crafty-console-tls
+  namespace: crafty
+spec:
+  secretName: crafty-console-tls
+  dnsNames:
+    - console.nebulahvelvet.no
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt-domeneshop
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: crafty-external
+  namespace: crafty
+  annotations:
+    kubernetes.io/ingress.class: traefik-external
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`console.nebulahvelvet.no`)
+      kind: Rule
+      middlewares:
+        - name: f2b-crafty
+          namespace: traefik-external
+        - name: public-chain
+          namespace: traefik-external
+        - name: crafty-body-size
+      services:
+        - name: craftycontroller-https
+          port: 8443
+          scheme: https
+          serversTransport: crafty-skipverify
+  tls:
+    secretName: crafty-console-tls

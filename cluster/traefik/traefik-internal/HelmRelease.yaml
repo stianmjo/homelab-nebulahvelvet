@@ -30,11 +30,9 @@ spec:
       replicas: 2
 
     providers:
+      # All routing is IngressRoute (CRD); no networking.k8s.io Ingress objects remain
       kubernetesIngress:
-        enabled: true
-        ingressClass: traefik-internal
-        allowEmptyServices: true
-        allowExternalNameServices: false
+        enabled: false
 
       # IMPORTANT: must be ON for the dashboard IngressRoute
       kubernetesCRD:
@@ -42,14 +40,14 @@ spec:
         ingressClass: traefik-internal
 
     ingressClass:
-      enabled: true
-      isDefaultClass: false
-      name: traefik-internal
+      enabled: false
 
     service:
+      # spec.loadBalancerIP is deprecated upstream; MetalLB reads its own annotation
+      annotations:
+        metallb.io/loadBalancerIPs: "10.0.2.83"
       spec:
         type: LoadBalancer
-        loadBalancerIP: 10.0.2.83
         externalTrafficPolicy: Local
 
     api:

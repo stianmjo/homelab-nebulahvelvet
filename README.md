@@ -4,92 +4,110 @@
 [![Flux](https://img.shields.io/badge/Flux-5468FF?style=flat-square&logo=flux&logoColor=white)](https://fluxcd.io)
 [![Traefik](https://img.shields.io/badge/Traefik-24A1C1?style=flat-square&logo=traefikproxy&logoColor=white)](https://traefik.io)
 [![Authentik](https://img.shields.io/badge/Authentik-FD4B2D?style=flat-square&logo=authentik&logoColor=white)](https://goauthentik.io)
-[![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=flat-square&logo=prometheus&logoColor=white)](https://prometheus.io)
 
-> Self-hosted Kubernetes infrastructure. GitOps-managed.
+> Bare-metal Kubernetes, reconciled from Git.
 
-A bare-metal Kubernetes cluster running on commodity hardware, fully managed through Git. Every change flows through version control as infrastructure as code.
+Everything under `cluster/` is the desired state. Flux watches `main` and applies it, so the repo is the only way in.
 
-## Stack
+## Core Platform
+
+```mermaid
+flowchart LR
+    git[("GitHub<br/>main")]:::src --> flux{{"Flux"}}:::gitops
+
+    subgraph net["Network"]
+        direction TB
+        mlb["MetalLB · L2<br/>10.0.2.80–90"]
+        ext["Traefik external<br/>:443 · *.nebulahvelvet.no"]
+        int["Traefik internal<br/>:80 · *.local.net"]
+        mlb -- ".82" --> ext
+        mlb -- ".83" --> int
+    end
+
+    subgraph sec["Identity & Trust"]
+        direction TB
+        ak["Authentik<br/>SSO · OIDC · ForwardAuth"]
+        cm["cert-manager<br/>Let's Encrypt DNS-01"]
+        eso["External Secrets"]
+        relay["proton-relay"]
+        relay --> eso
+    end
+
+    subgraph data["Storage"]
+        direction TB
+        lh[("Longhorn<br/>replicated block")]
+        sw[("SeaweedFS<br/>S3 object")]
+        nfs[("NFS<br/>bulk / media")]
+        pg[("CloudNativePG<br/>Postgres")]
+    end
+
+    internet((Internet)):::edge --> mlb
+    lan((LAN)):::edge --> mlb
+    pass[["Proton Pass"]]:::src --> relay
+    dns[["Domeneshop DNS"]]:::src --> cm
+
+    ext -- "middleware chain" --> ak
+    cm -- "TLS secrets" --> ext
+    ak --> pg
+    pg -- "nightly dump" --> sw
+    int --> sw
+
+    flux -.-> net & sec & data
+
+    classDef src fill:#1f2937,stroke:#6b7280,color:#f9fafb
+    classDef edge fill:#0f766e,stroke:#14b8a6,color:#f0fdfa
+    classDef gitops fill:#5468ff,stroke:#3b4fe0,color:#fff
+    style net fill:#24a1c114,stroke:#24a1c1
+    style sec fill:#fd4b2d14,stroke:#fd4b2d
+    style data fill:#f59e0b14,stroke:#f59e0b
+```
 
 | Layer | Component | Role |
 |:--|:--|:--|
-| Core | Flux v2 | Continuous reconciliation from Git to cluster state |
-| Core | Traefik | Dual ingress, external with TLS and internal for LAN services |
-| Core | MetalLB | Layer 2 load balancing for bare metal |
-| Core | cert-manager | Certificate lifecycle via Let's Encrypt DNS-01 |
-| Core | External Secrets Operator | Secret sync from Proton Pass through the proton-relay bridge |
-| Identity | Authentik | Single sign-on with OIDC/SAML and Traefik ForwardAuth |
-| Data | Longhorn | Distributed block storage with replication and snapshots |
-| Data | SeaweedFS | S3-compatible object storage for backups and artifacts |
-| Data | NFS | Shared storage for media libraries and bulk data |
-| Data | CloudNativePG | PostgreSQL operator for stateful database workloads |
-| Observability | Prometheus and Grafana | Cluster metrics collection and dashboards |
-| Observability | Splunk | Log analytics and security event search |
-| Observability | Uptime Kuma | Service and certificate uptime monitoring |
-| Ops | Renovate | Automated dependency updates |
-| Ops | GitHub Runners | Self-hosted Actions runners for CI/CD |
-| Ops | apt-scanner | Scheduled CVE and package audit across nodes, reported to Discord |
+| GitOps | Flux v2 | Reconciles `cluster/` from `main`, alerts to Discord |
+| Network | MetalLB | L2 LoadBalancer IPs from `10.0.2.80–90` |
+| Network | Traefik ×2 | External (TLS, bot wrangler, fail2ban, rate limits) and internal LAN, routed by `IngressRoute` only |
+| Trust | cert-manager | Let's Encrypt via DNS-01 on Domeneshop |
+| Trust | External Secrets + proton-relay | Every secret pulled from Proton Pass |
+| Auth | Authentik | SSO with OIDC, SAML and Traefik ForwardAuth |
+| Storage | Longhorn | Replicated block storage; `longhorn-retain` for state that must survive |
+| Storage | SeaweedFS | S3 object storage for backups |
+| Storage | NFS | `nfs-odin` class for media and bulk data |
+| Storage | CloudNativePG | Postgres operator, backing Authentik |
 
-## How It Works
+## Routing
 
-All configuration lives in this repository under `cluster/`. Flux watches the `main` branch and continuously reconciles the desired state, so there is no manual `kubectl apply` and no configuration drift.
+Two Traefik instances split the edge. **traefik-external** takes `:443` for public hosts. It terminates TLS with cert-manager certificates, and every route passes a middleware chain (bot wrangler, fail2ban, rate and in-flight limits). **traefik-internal** serves `*.local.net` over plain HTTP on the LAN.
 
-**Ingress** splits into two Traefik instances. One faces the internet with TLS termination, rate limiting, and bot protection. The other serves internal services over plain HTTP on the local network.
-
-**Identity** is centralized through Authentik, providing SSO across services with OIDC, SAML, and Traefik ForwardAuth.
-
-**Storage** is layered. Longhorn handles stateful workloads needing block storage, SeaweedFS provides S3 for object data, NFS shares bulk storage across pods, and CloudNativePG runs the Postgres databases.
-
-**Observability** covers metrics, logs, and availability. Prometheus and Grafana collect and visualize cluster metrics, Splunk indexes logs for search and security analysis, and Uptime Kuma tracks service and certificate health.
-
-**Workloads** on top of the platform include a media automation stack and a Minecraft server, all served through internal ingress.
-
-**Ops** is automated where possible. apt-scanner audits upgradable packages against the Ubuntu CVE API and posts to Discord, Renovate keeps dependencies current, and self-hosted runners execute CI/CD.
-
-## Repository Structure
-
-```
-cluster/
-├── flux/             Flux configuration and sync settings
-├── traefik/          External and internal ingress controllers
-├── metalllb/         Load balancer IP pool configuration
-├── cert-manager/     TLS certificate automation
-├── external-secrets/ External Secrets Operator and the proton-relay bridge
-│
-├── authentik/        SSO provider with CNPG PostgreSQL backend
-│
-├── longhorn/         Block storage and retention policies
-├── seaweedfs/        S3 object storage operator and cluster
-├── nfs-provisioner/  Dynamic NFS volume provisioner
-├── cnpg/             CloudNativePG operator
-│
-├── monitoring/       Prometheus, Grafana, and Alertmanager
-├── splunk/           Log analytics and security event search
-├── uptime-kuma/      Uptime and certificate monitoring
-│
-├── media/            Media automation stack
-├── crafty/           Minecraft server controller
-│
-├── apt-scanner/      Node CVE and package audit CronJob
-├── renovate/         Automated dependency updates
-└── github-runner/    Self-hosted GitHub Actions runners
-```
+Routes are Traefik `IngressRoute` CRDs; the Kubernetes Ingress provider is disabled. Each route carries `kubernetes.io/ingress.class: traefik-external` or `traefik-internal` to pick its instance. Public routes ship their own `Certificate`. Start from [cluster/template/ingressRoute.yaml](cluster/template/ingressRoute.yaml).
 
 ## Secrets
 
-Credentials are never committed to the repository. Secrets are managed through two complementary patterns.
-
-**Bootstrap secrets** are credentials required before workloads can start, such as PATs, database passwords, and API keys. They are applied manually with `kubectl create secret`. Each component that needs one includes a `*-secret-template.yaml` documenting the expected structure and key names.
-
-**Runtime secrets** are managed by [External Secrets Operator](https://external-secrets.io) via [proton-relay](https://github.com/stianmjo/proton-relay), a lightweight bridge that pulls secrets from Proton Pass vaults into Kubernetes Secrets on a configurable refresh interval.
+Nothing sensitive lives in Git. Secrets come from a Proton Pass vault through [proton-relay](https://github.com/stianmjo/proton-relay) and into the cluster via External Secrets.
 
 ```
-Proton Pass vault → proton-relay → ESO ClusterSecretStore → ExternalSecret → Kubernetes Secret
+Proton Pass → proton-relay → ClusterSecretStore → ExternalSecret → Secret
 ```
 
-To force an immediate sync of a secret:
+Force a resync:
 
 ```sh
 kubectl annotate externalsecret <name> -n <namespace> force-sync=$(date +%s) --overwrite
+```
+
+## Layout
+
+```
+cluster/
+├── flux/              Flux instance and Discord alerts
+├── metalllb/          IP pool and L2 advertisement
+├── traefik/           External and internal ingress controllers
+├── cert-manager/      ClusterIssuer and Domeneshop DNS-01 webhook
+├── external-secrets/  ESO and the proton-relay bridge
+├── authentik/         SSO with CNPG Postgres and S3 backups
+├── longhorn/          Block storage
+├── seaweedfs/         S3 object storage
+├── nfs-provisioner/   NFS storage class
+├── cnpg/              CloudNativePG operator
+└── …                  Workloads on top of the platform
 ```

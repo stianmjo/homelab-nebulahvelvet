@@ -51,21 +51,6 @@ spec:
           http:
             port: 9696
 
-    ingress:
-      app:
-        enabled: true
-        className: traefik-internal
-        annotations:
-          traefik.ingress.kubernetes.io/router.entrypoints: web
-        hosts:
-          - host: prowlarr.local.net
-            paths:
-              - path: /
-                pathType: Prefix
-                service:
-                  identifier: app
-                  port: http
-
     persistence:
       config:
         enabled: true

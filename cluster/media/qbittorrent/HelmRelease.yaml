@@ -101,21 +101,6 @@ spec:
             port: 6881
             protocol: UDP
 
-    ingress:
-      app:
-        enabled: true
-        className: traefik-internal
-        annotations:
-          traefik.ingress.kubernetes.io/router.entrypoints: web
-        hosts:
-          - host: qbittorrent.local.net
-            paths:
-              - path: /
-                pathType: Prefix
-                service:
-                  identifier: app
-                  port: http
-
     persistence:
       config:
         enabled: true

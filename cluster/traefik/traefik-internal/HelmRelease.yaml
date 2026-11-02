@@ -99,6 +99,9 @@ spec:
     ingressRoute:
       dashboard:
         enabled: true
+        # The CRD provider filters on this class; without it the route is ignored (404)
+        annotations:
+          kubernetes.io/ingress.class: traefik-internal
         # Hostname you want to use on LAN
         matchRule: Host(`traefik-internal.local.net`)
         entryPoints:

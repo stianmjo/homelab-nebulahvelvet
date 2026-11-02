@@ -1,17 +1,3 @@
-# Certificate name matches the secret so the cert issued for the old Ingress is reused
-apiVersion: cert-manager.io/v1
-kind: Certificate
-metadata:
-  name: uptime-kuma-tls
-  namespace: uptime-kuma
-spec:
-  secretName: uptime-kuma-tls
-  dnsNames:
-    - status.nebulahvelvet.no
-  issuerRef:
-    kind: ClusterIssuer
-    name: letsencrypt-domeneshop
----
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:

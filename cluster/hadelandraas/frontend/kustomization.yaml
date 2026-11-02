@@ -7,4 +7,5 @@ resources:
   - deployment.yaml
   - service.yaml
   - middleware.yaml
+  - certificate.yaml
   - ingressRoute.yaml

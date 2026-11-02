@@ -6,4 +6,5 @@ resources:
   - HelmRepository.yaml
   - cache-pvc.yaml
   - middleware.yaml
+  - certificate.yaml
   - ingressRoute.yaml

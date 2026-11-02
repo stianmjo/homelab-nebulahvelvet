@@ -1,0 +1,13 @@
+# Name matches the secret so the cert issued for the old Ingress is reused
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: jellyfin-tls
+  namespace: media
+spec:
+  secretName: jellyfin-tls
+  dnsNames:
+    - jellyfin.nebulahvelvet.no
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt-domeneshop

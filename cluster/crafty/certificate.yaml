@@ -1,0 +1,13 @@
+# Name matches the secret so the cert issued for the old Ingress is reused
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: crafty-console-tls
+  namespace: crafty
+spec:
+  secretName: crafty-console-tls
+  dnsNames:
+    - console.nebulahvelvet.no
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt-domeneshop

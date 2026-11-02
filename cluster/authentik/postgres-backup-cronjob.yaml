@@ -10,9 +10,11 @@ spec:
   failedJobsHistoryLimit: 1
   jobTemplate:
     spec:
+      backoffLimit: 2
       template:
         spec:
-          restartPolicy: OnFailure
+          # Never: failed pods (and their logs) are kept for the failed job
+          restartPolicy: Never
           volumes:
             - name: backup
               emptyDir: {}
@@ -23,7 +25,7 @@ spec:
                 - sh
                 - -c
                 - |
-                  set -e
+                  set -eo pipefail
                   echo "[$(date)] === Starting backup job ==="
                   echo "[$(date)] Connecting to authentik-postgres-rw.authentik.svc.cluster.local as user 'authentik'"
                   pg_isready -h authentik-postgres-rw.authentik.svc.cluster.local -U authentik -d authentik
@@ -48,6 +50,9 @@ spec:
                 - -c
                 - |
                   set -e
+                  # aws-cli 2.38+ defaults `aws s3` to the CRT client, whose DeleteObject
+                  # signature SeaweedFS rejects (SignatureDoesNotMatch). Use the classic client.
+                  aws configure set default.s3.preferred_transfer_client classic
                   FILENAME="$(date +%Y%m%d).sql.gz"
                   echo "[$(date)] === Starting upload ==="
                   echo "[$(date)] Target: s3://authentik-postgres/dumps/$FILENAME"

@@ -8,3 +8,4 @@ resources:
   - certificate.yaml
   - ingressRoute.yaml
   - fail2ban-middleware.yaml
+  - networkpolicy.yaml

@@ -3,4 +3,5 @@ kind: Kustomization
 
 resources:
   - deployment.yaml
+  - health-proxy.yaml
   - ClusterSecretStore.yaml

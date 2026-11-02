@@ -29,7 +29,8 @@ spec:
           # renovate: datasource=docker depName=ghcr.io/stianmjo/proton-relay
           image: ghcr.io/stianmjo/proton-relay:3.0.0
           ports:
-            - containerPort: 8080
+            - name: http
+              containerPort: 8080
           env:
             - name: PROTON_PASS_VAULT
               value: "Kubernetes"
@@ -71,7 +72,43 @@ spec:
             limits:
               cpu: 200m
               memory: 128Mi
+        # Exposes ONLY GET /health and /ready on 8081 so uptime-kuma can be allowed
+        # to that port without a network path to the secret endpoints on 8080.
+        - name: health-proxy
+          # renovate: datasource=docker depName=nginxinc/nginx-unprivileged
+          image: nginxinc/nginx-unprivileged:1.31.7-alpine
+          ports:
+            - name: health
+              containerPort: 8081
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: health-proxy-conf
+              mountPath: /etc/nginx/conf.d
+              readOnly: true
+            - name: health-proxy-tmp
+              mountPath: /tmp
+          livenessProbe:
+            tcpSocket:
+              port: 8081
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 5m
+              memory: 8Mi
+            limits:
+              cpu: 50m
+              memory: 32Mi
       volumes:
+        - name: health-proxy-conf
+          configMap:
+            name: proton-relay-health-proxy
+        - name: health-proxy-tmp                 # nginx pid + temp paths
+          emptyDir:
+            sizeLimit: 8Mi
         - name: session
           emptyDir:
             sizeLimit: 64Mi
@@ -88,5 +125,9 @@ spec:
   selector:
     app: proton-relay
   ports:
-    - port: 80
-      targetPort: 8080
+    - name: http
+      port: 80
+      targetPort: http
+    - name: health                       # uptime-kuma: /health and /ready only
+      port: 8081
+      targetPort: health

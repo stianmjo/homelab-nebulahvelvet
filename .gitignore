@@ -1,0 +1,56 @@
+# Secrets never live in Git: they come from Proton Pass via External Secrets.
+# These patterns catch the ways a real secret could slip in by accident.
+
+# Filled-in Secret manifests (e.g. `kubectl create secret ... -o yaml > x-secret.yaml`).
+# Only templates, ExternalSecrets and SecretStores are committed.
+*secret*.yaml
+*secret*.yml
+!*-template.yaml
+!*-templates.yaml
+!*externalsecret*.yaml
+!*external-secret*.yaml
+!*ClusterSecretStore*.yaml
+!cluster/template/secret.yaml
+
+# Env files and local overrides
+.env
+.env.*
+*.env
+*.local.yaml
+*.local.yml
+
+# Cluster access
+kubeconfig*
+*.kubeconfig
+.kube/
+talosconfig
+
+# Keys and certificates
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.agekey
+id_rsa*
+id_ed25519*
+
+# Database dumps and backups
+*.sql
+*.sql.gz
+*.dump
+
+# Downloaded charts and tooling output
+*.tgz
+charts/
+
+# Claude Code (stays local)
+.claude/
+
+# Editors and OS
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db

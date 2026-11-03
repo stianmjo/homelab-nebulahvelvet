@@ -1,0 +1,69 @@
+# Tier 3: crafty. The panel (8443) is reached by both Traefik instances
+# (console.local.net and console.nebulahvelvet.no). Minecraft (25565) is open
+# to anyone: the LoadBalancer uses externalTrafficPolicy: Cluster, so player
+# traffic is SNAT'd to node addresses and can't be narrowed by source.
+# Egress open (server downloads, mods, auth to Mojang).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: crafty
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-same-namespace
+  namespace: crafty
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-traefik-to-panel
+  namespace: crafty
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: craftycontroller
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: traefik-internal
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: traefik-external
+      ports:
+        - protocol: TCP
+          port: 8443
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-minecraft
+  namespace: crafty
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: craftycontroller
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 25565

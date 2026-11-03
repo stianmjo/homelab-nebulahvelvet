@@ -36,12 +36,6 @@
       "matchPackageNames": ["ghcr.io/cloudnative-pg/postgresql", "postgres"],
       "matchUpdateTypes": ["major"],
       "enabled": false
-    },
-    {
-      "description": "Ignore gjallar - managed manually",
-      "matchDatasources": ["docker"],
-      "matchPackageNames": ["git.nebulahvelvet.no/stianmjo/gjallar"],
-      "enabled": false
     }
   ],
   "prConcurrentLimit": 0,

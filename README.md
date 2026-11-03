@@ -1,17 +1,33 @@
+<div align="center">
+
 # homelab-nebulahvelvet
+
+A bare-metal Kubernetes cluster at home, run entirely from this repo.
 
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=flat-square&logo=kubernetes&logoColor=white)](https://kubernetes.io)
 [![Flux](https://img.shields.io/badge/Flux-5468FF?style=flat-square&logo=flux&logoColor=white)](https://fluxcd.io)
 [![Traefik](https://img.shields.io/badge/Traefik-24A1C1?style=flat-square&logo=traefikproxy&logoColor=white)](https://traefik.io)
 [![Authentik](https://img.shields.io/badge/Authentik-FD4B2D?style=flat-square&logo=authentik&logoColor=white)](https://goauthentik.io)
+[![Renovate](https://img.shields.io/badge/Renovate-enabled-1A1F6C?style=flat-square&logo=renovate&logoColor=white)](https://docs.renovatebot.com)
 
-> A bare-metal Kubernetes cluster at home, run entirely from this repo.
+</div>
 
-Four small machines, one Git repo. Everything the cluster runs lives under `cluster/`, and Flux keeps the cluster in sync with `main`. Want to change something? Change the YAML and push.
+---
 
-## The big picture
+Four small machines, one Git repo. Everything the cluster runs lives under `cluster/`, and Flux keeps the cluster in sync with `main`. To change something, edit the YAML and push.
 
-Requests come in at the top and work their way down. Each layer leans on the one below it.
+## Hardware
+
+| Node | Role | CPU | RAM | OS |
+|:--|:--|:--|:--|:--|
+| `mpc01` | control plane | 12 cores | 32 GB | Ubuntu 24.04 |
+| `mpc02` | worker | 12 cores | 32 GB | Ubuntu 24.04 |
+| `mpc03` | worker | 12 cores | 32 GB | Ubuntu 24.04 |
+| `mpc04` | worker | 16 cores | 32 GB | Ubuntu 24.04 |
+
+## Overview
+
+Requests come in at the top and work their way down. Each layer relies on the one below it.
 
 ```mermaid
 flowchart TB
@@ -43,9 +59,7 @@ flowchart TB
     users --> edge
 ```
 
-## What's running
-
-| Layer | Piece | What it does |
+| Layer | Component | What it does |
 |:--|:--|:--|
 | Sync | Flux | Watches `main` and applies it. Pings Discord when something changes |
 | Front door | MetalLB | Gives Traefik real LAN IPs (`10.0.2.82` public, `10.0.2.83` internal) |
@@ -56,20 +70,20 @@ flowchart TB
 | Platform | External Secrets + proton-relay | Pulls every secret out of Proton Pass |
 | Platform | kube-network-policies | Enforces NetworkPolicies so namespaces can't talk freely |
 | Storage | Longhorn | Replicated disks for anything that needs to keep data |
-| Storage | SeaweedFS | S3 storage, used for backups |
+| Storage | SeaweedFS | Internal S3 storage, used for backups |
 | Storage | NFS | Big shared storage for media |
 | Storage | CloudNativePG | Postgres databases (Authentik's lives here) |
 
-## How traffic gets in
+## Networking
 
 There are two Traefik instances, each with its own IP:
 
 - **traefik-external** handles public `*.nebulahvelvet.no` sites over HTTPS. Every route passes bot blocking, fail2ban and rate limits before it reaches an app.
 - **traefik-internal** handles `*.local.net` sites on the home network over plain HTTP.
 
-Routes are Traefik `IngressRoute`s; regular Kubernetes Ingress is switched off. Each route picks its Traefik with `kubernetes.io/ingress.class`, and public routes bring their own `certificate.yaml`. To add one, copy [cluster/template/ingressRoute.yaml](cluster/template/ingressRoute.yaml).
+All routes are Traefik `IngressRoute`s; regular Kubernetes Ingress is switched off. Each route picks its Traefik with `spec.ingressClassName`, and public routes bring their own `certificate.yaml`. To add one, copy [cluster/template/ingressRoute.yaml](cluster/template/ingressRoute.yaml).
 
-## Network policies
+### Network policies
 
 Every app namespace starts closed. Nothing can reach its pods except:
 
@@ -105,26 +119,41 @@ So the rule is simple: **pin an exact version and don't annotate it.** Only when
 
 ```yaml
 # renovate: datasource=github-tags depName=tomMoulard/fail2ban
-version: v0.8.9
+version: v0.9.0
 ```
 
-### Postgres major upgrades
+Postgres majors are the one exception: Renovate skips them, and they're done by hand.
 
-Renovate skips Postgres majors on purpose: bumping the major of the CNPG Cluster's `imageName` makes CNPG run an offline `pg_upgrade`. Postgres is down for the whole upgrade, the replicas are rebuilt from scratch, and nothing rolls back by itself. Do it by hand:
+<details>
+<summary><b>Postgres major upgrades</b></summary>
+
+<br>
+
+Bumping the major of the CNPG Cluster's `imageName` makes CNPG run an offline `pg_upgrade`. Postgres is down for the whole upgrade, the replicas are rebuilt from scratch, and nothing rolls back by itself.
 
 1. Check that authentik supports the new major. Its CI tests the oldest and newest supported versions (`psql:` matrix in `.github/workflows/ci-main.yml` at the release tag).
 2. Take a fresh dump and check that the job succeeds:
-   `kubectl create job -n authentik --from=cronjob/authentik-postgres-dump authentik-postgres-dump-manual`
+   ```sh
+   kubectl create job -n authentik --from=cronjob/authentik-postgres-dump authentik-postgres-dump-manual
+   ```
 3. Stop authentik so it doesn't crash-loop and sit in backoff afterwards:
-   `flux suspend hr authentik -n authentik && kubectl scale deploy -n authentik authentik-server authentik-worker --replicas=0`
+   ```sh
+   flux suspend hr authentik -n authentik
+   kubectl scale deploy -n authentik authentik-server authentik-worker --replicas=0
+   ```
 4. Bump the major in both `postgres-cluster.yaml` and `postgres-backup-cronjob.yaml`. Keep the distro suffix the same (e.g. `-standard-bullseye`): the upgrade job runs the old binaries on the new image. Push.
 5. Wait for `kubectl get cluster -n authentik authentik-postgres` to show `Cluster in healthy state` with all three instances on the new image.
 6. Start authentik again:
-   `kubectl scale deploy -n authentik authentik-server authentik-worker --replicas=2 && flux resume hr authentik -n authentik`
+   ```sh
+   kubectl scale deploy -n authentik authentik-server authentik-worker --replicas=2
+   flux resume hr authentik -n authentik
+   ```
 
 If the upgrade job fails, the old data directory is left untouched. Revert `imageName`, then delete the `authentik-postgres-<n>-major-upgrade` job.
 
-## Where things live
+</details>
+
+## Directories
 
 ```
 cluster/
@@ -139,5 +168,7 @@ cluster/
 ├── seaweedfs/         S3 storage
 ├── nfs-provisioner/   NFS storage
 ├── cnpg/              Postgres operator
+├── renovate/          Nightly dependency updates
+├── template/          Starting point for a new app
 └── …                  The apps
 ```

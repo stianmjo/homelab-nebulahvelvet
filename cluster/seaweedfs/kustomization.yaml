@@ -7,4 +7,5 @@ resources:
   - operator
   - app
   - ingressRoute.yaml
+  - networkpolicy.yaml
 #  - s3-external-access.yaml

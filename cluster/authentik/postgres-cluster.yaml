@@ -8,9 +8,11 @@ spec:
   # Pinned explicitly: unset, the CNPG webhook fills in its default at creation
   # and it never moves (was stuck on 17.4). Stay on the bullseye base the
   # cluster was created with; a distro change (-> trixie) is its own step.
-  # Majors are disabled in renovate.json (needs a deliberate pg_upgrade).
+  # Majors are disabled in renovate.json: bumping the major here triggers an
+  # offline in-place pg_upgrade (downtime, replicas recloned, no auto-rollback),
+  # and old/new images must share a distro. 17 -> 18 done 2026-11-03.
   # renovate: datasource=docker depName=ghcr.io/cloudnative-pg/postgresql versioning=docker
-  imageName: ghcr.io/cloudnative-pg/postgresql:17.11-standard-bullseye
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.6-standard-bullseye
   primaryUpdateStrategy: unsupervised
 
   bootstrap:

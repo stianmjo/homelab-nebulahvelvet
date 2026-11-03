@@ -14,6 +14,10 @@ spec:
   # renovate: datasource=docker depName=ghcr.io/cloudnative-pg/postgresql versioning=docker
   imageName: ghcr.io/cloudnative-pg/postgresql:18.6-standard-bullseye
   primaryUpdateStrategy: unsupervised
+  # Promote an already-updated replica before touching the primary. The default
+  # (restart) took the primary down ~3 min on 2026-11-03 and authentik
+  # crash-looped through it. Doesn't apply to major upgrades (always offline).
+  primaryUpdateMethod: switchover
 
   bootstrap:
     initdb:

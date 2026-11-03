@@ -108,6 +108,22 @@ So the rule is simple: **pin an exact version and don't annotate it.** Only when
 version: v0.8.9
 ```
 
+### Postgres major upgrades
+
+Renovate skips Postgres majors on purpose: bumping the major of the CNPG Cluster's `imageName` makes CNPG run an offline `pg_upgrade`. Postgres is down for the whole upgrade, the replicas are rebuilt from scratch, and nothing rolls back by itself. Do it by hand:
+
+1. Check that authentik supports the new major. Its CI tests the oldest and newest supported versions (`psql:` matrix in `.github/workflows/ci-main.yml` at the release tag).
+2. Take a fresh dump and check that the job succeeds:
+   `kubectl create job -n authentik --from=cronjob/authentik-postgres-dump authentik-postgres-dump-manual`
+3. Stop authentik so it doesn't crash-loop and sit in backoff afterwards:
+   `flux suspend hr authentik -n authentik && kubectl scale deploy -n authentik authentik-server authentik-worker --replicas=0`
+4. Bump the major in both `postgres-cluster.yaml` and `postgres-backup-cronjob.yaml`. Keep the distro suffix the same (e.g. `-standard-bullseye`): the upgrade job runs the old binaries on the new image. Push.
+5. Wait for `kubectl get cluster -n authentik authentik-postgres` to show `Cluster in healthy state` with all three instances on the new image.
+6. Start authentik again:
+   `kubectl scale deploy -n authentik authentik-server authentik-worker --replicas=2 && flux resume hr authentik -n authentik`
+
+If the upgrade job fails, the old data directory is left untouched. Revert `imageName`, then delete the `authentik-postgres-<n>-major-upgrade` job.
+
 ## Where things live
 
 ```

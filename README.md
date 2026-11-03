@@ -141,7 +141,7 @@ Bumping the major of the CNPG Cluster's `imageName` makes CNPG run an offline `p
    flux suspend hr authentik -n authentik
    kubectl scale deploy -n authentik authentik-server authentik-worker --replicas=0
    ```
-4. Bump the major in both `postgres-cluster.yaml` and `postgres-backup-cronjob.yaml`. Keep the distro suffix the same (e.g. `-standard-bullseye`): the upgrade job runs the old binaries on the new image. Push.
+4. Bump the major in both `postgres-cluster.yaml` and `postgres-backup-cronjob.yaml`. Keep the distro suffix the same (e.g. `-standard-trixie`): the upgrade job runs the old binaries on the new image. Change distro in a separate step, within one major, and only to a distro CNPG still builds. Push.
 5. Wait for `kubectl get cluster -n authentik authentik-postgres` to show `Cluster in healthy state` with all three instances on the new image.
 6. Start authentik again:
    ```sh

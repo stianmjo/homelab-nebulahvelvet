@@ -6,13 +6,14 @@ metadata:
 spec:
   instances: 3
   # Pinned explicitly: unset, the CNPG webhook fills in its default at creation
-  # and it never moves (was stuck on 17.4). Stay on the bullseye base the
-  # cluster was created with; a distro change (-> trixie) is its own step.
+  # and it never moves (was stuck on 17.4). Debian trixie base: CNPG stopped
+  # building bullseye images on 2026-08-31 (Debian LTS end); moved 2026-11-03.
+  # A distro change within the same major is a normal rolling update.
   # Majors are disabled in renovate.json: bumping the major here triggers an
   # offline in-place pg_upgrade (downtime, replicas recloned, no auto-rollback),
   # and old/new images must share a distro. 17 -> 18 done 2026-11-03.
   # renovate: datasource=docker depName=ghcr.io/cloudnative-pg/postgresql versioning=docker
-  imageName: ghcr.io/cloudnative-pg/postgresql:18.6-standard-bullseye
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.6-standard-trixie
   primaryUpdateStrategy: unsupervised
   # Promote an already-updated replica before touching the primary. The default
   # (restart) took the primary down ~3 min on 2026-11-03 and authentik

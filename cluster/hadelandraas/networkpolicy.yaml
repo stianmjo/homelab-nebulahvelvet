@@ -1,0 +1,45 @@
+# Tier 3: hadelandraas. traefik-external reaches the nginx frontend (80);
+# the frontend proxies the PocketBase API to the backend (8090) inside the
+# namespace. Nothing else reaches the backend. Egress open (git-sync, mail).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: hadelandraas
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-same-namespace
+  namespace: hadelandraas
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-traefik-external-to-frontend
+  namespace: hadelandraas
+spec:
+  podSelector:
+    matchLabels:
+      app: hadelandraas
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: traefik-external
+      ports:
+        - protocol: TCP
+          port: 80

@@ -4,3 +4,4 @@ resources:
   - ns.yaml
   - frontend
   - backend
+  - networkpolicy.yaml

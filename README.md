@@ -69,7 +69,7 @@ flowchart TB
 | Layer | Component | What it does |
 |:--|:--|:--|
 | Sync | Flux | Watches `main` and applies it. Pings Discord when something changes |
-| Front door | MetalLB | Gives Traefik real LAN IPs (`10.0.2.82` public, `10.0.2.83` internal) |
+| Front door | MetalLB | LoadBalancer IPs on the LAN |
 | Front door | Traefik ×2 | One for the internet, one for the LAN |
 | Platform | Authentik | Single sign-on for everything |
 | Platform | Uptime Kuma | Status page and monitors for every service |
@@ -85,23 +85,14 @@ flowchart TB
 
 Two Traefik instances, each with its own IP:
 
-- **traefik-external** serves public `*.nebulahvelvet.no` sites over HTTPS. Every route passes bot blocking, fail2ban and rate limits before it reaches an app. Plain HTTP redirects to HTTPS, and encoded characters in request paths are rejected.
-- **traefik-internal** serves `*.local.net` sites on the home network over plain HTTP. Routes without their own login (Longhorn, the SeaweedFS filer, both Traefik dashboards) only accept LAN and HOMELAB clients, so pods can't reach them through the LoadBalancer IP.
+- **traefik-external** serves public sites over HTTPS, behind bot blocking, fail2ban and rate limits.
+- **traefik-internal** serves sites on the home network.
 
 All routes are Traefik `IngressRoute`s that select their Traefik with `spec.ingressClassName`; regular Kubernetes Ingress is off. Public routes carry their own `certificate.yaml`.
 
 ### Network policies
 
-Every app namespace is closed by default. Ingress is limited to:
-
-- pods in the same namespace
-- the Traefik instance that serves it, on the app's own port only
-
-Egress from internet-facing namespaces (authentik, media, crafty, hadelandraas) reaches the internet but not private ranges: no LAN, no nodes, no other namespaces. The only exceptions are DNS via CoreDNS, the API server where an app needs it, and S3 for the authentik dump job. The *arr apps go one step further and only leave through the VPN. Uptime Kuma keeps open egress, since monitoring the LAN is its job.
-
-The secrets path is the tightest. Only External Secrets talks to proton-relay, and the relay only makes DNS lookups and HTTPS calls to Proton. Uptime Kuma watches it on a separate health-only port.
-
-Policies live next to each app as `networkpolicy.yaml`.
+App namespaces are default-deny, with ingress and egress allowed per app. Policies live next to each app as `networkpolicy.yaml`.
 
 ## Secrets
 

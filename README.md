@@ -129,8 +129,6 @@ So the rule is simple: **pin an exact version and don't annotate it.** Only when
 version: v0.9.0
 ```
 
-Postgres majors are the one exception: Renovate skips them, and they're done by hand.
-
 ## Directories
 
 ```

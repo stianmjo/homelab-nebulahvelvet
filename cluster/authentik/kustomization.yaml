@@ -10,4 +10,4 @@ resources:
   - certificate.yaml
   - ingressRoute.yaml
   - middleware.yaml
-
+  - networkpolicy.yaml

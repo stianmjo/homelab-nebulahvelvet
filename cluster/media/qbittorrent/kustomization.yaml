@@ -5,3 +5,4 @@ resources:
   - HelmRelease.yaml
   - config-pvc.yaml
   - ingressRoute.yaml
+  - vpn-service.yaml

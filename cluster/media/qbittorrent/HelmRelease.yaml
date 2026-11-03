@@ -69,6 +69,7 @@ spec:
               HTTPPROXY: "on"
               HTTPPROXY_LISTENING_ADDRESS: ":8888"
               HTTPPROXY_STEALTH: "on"          # no Via/X-Forwarded-For headers
+              HTTPPROXY_LOG: "on"              # TEMPORARY: verify each app goes via the VPN
 
               # Allow access to local/cluster networks (Traefik, DNS, etc.)
               FIREWALL_OUTBOUND_SUBNETS: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
@@ -102,8 +103,6 @@ spec:
           bittorrent-udp:
             port: 6881
             protocol: UDP
-          vpn-proxy:                         # gluetun HTTP proxy, egress via the VPN
-            port: 8888
 
     persistence:
       config:

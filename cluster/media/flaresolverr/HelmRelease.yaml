@@ -31,8 +31,8 @@ spec:
               LOG_LEVEL: info
               LOG_HTML: "false"
               CAPTCHA_SOLVER: none
-              # All browsing goes out through the VPN (gluetun proxy in the qbittorrent pod)
-              PROXY_URL: http://qbittorrent.media.svc.cluster.local:8888
+              # All browsing goes out through the shared VPN
+              PROXY_URL: http://vpn.media.svc.cluster.local:8888
             resources:
               requests:
                 cpu: 100m

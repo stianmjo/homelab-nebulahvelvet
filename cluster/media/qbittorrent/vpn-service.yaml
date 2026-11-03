@@ -1,0 +1,18 @@
+# The shared VPN for the media namespace. gluetun runs as a sidecar in the
+# qbittorrent pod (qBittorrent lives inside the tunnel, keeping UDP/DHT and
+# gluetun's kill switch); everything else branches off through gluetun's
+# HTTP proxy at vpn.media.svc.cluster.local:8888. Apps point at this name,
+# not at qbittorrent, so the VPN can move later without touching them.
+apiVersion: v1
+kind: Service
+metadata:
+  name: vpn
+  namespace: media
+spec:
+  selector:
+    app.kubernetes.io/name: qbittorrent
+    app.kubernetes.io/instance: qbittorrent
+  ports:
+    - name: http-proxy
+      port: 8888
+      targetPort: 8888

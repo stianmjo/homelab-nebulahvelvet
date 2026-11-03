@@ -34,6 +34,11 @@ spec:
               TZ: Europe/Oslo
               PUID: "1000"
               PGID: "1000"
+              # Internet via the shared VPN (vpn Service -> gluetun HTTP proxy).
+              # A proxy set in the app's own UI takes precedence over these.
+              HTTP_PROXY: http://vpn.media.svc.cluster.local:8888
+              HTTPS_PROXY: http://vpn.media.svc.cluster.local:8888
+              NO_PROXY: localhost,127.0.0.1,.cluster.local,.svc,.local.net,sonarr,radarr,bazarr,prowlarr,qbittorrent,flaresolverr,jellyfin
             resources:
               requests:
                 cpu: 100m

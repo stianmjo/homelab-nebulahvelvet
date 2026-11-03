@@ -182,9 +182,20 @@ spec:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: traefik-internal
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: traefik-external
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
+      ports:                              # Traefik entry points only
+        - protocol: TCP
+          port: 8000
+        - protocol: TCP
+          port: 8443
 ---
 # Egress: internet yes, private ranges no. DNS goes to CoreDNS, which
 # forwards to the router itself (kube-system has no egress policy).

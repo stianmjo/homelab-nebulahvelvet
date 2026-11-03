@@ -52,7 +52,7 @@ spec:
           restartPolicy: OnFailure
           containers:
             - name: backup
-              image: alpine/k8s:1.37.1
+              image: alpine/k8s:1.37.2
               command:
                 - /bin/bash
                 - -c

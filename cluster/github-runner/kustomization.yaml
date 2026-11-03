@@ -7,3 +7,4 @@ resources:
   - controller
   - scaler
   - arc-status-cronjob.yaml
+  - networkpolicy.yaml

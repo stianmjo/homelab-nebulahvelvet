@@ -31,32 +31,39 @@ Requests come in at the top and work their way down. Each layer relies on the on
 
 ```mermaid
 flowchart TB
-    users(["Internet and LAN"])
+    users(["Internet · LAN"]):::entry
+    git(["GitHub · main"]):::entry
 
-    subgraph cluster["Kubernetes cluster, synced from GitHub by Flux"]
-        direction TB
-
-        subgraph edge["Front door"]
-            direction LR
-            mlb["MetalLB<br/>hands out IPs"] --> traefik["Traefik<br/>routes requests"]
-        end
-
-        apps["Apps"]
-
-        subgraph platform["Platform"]
-            direction LR
-            ak["Authentik<br/>login"] ~~~ kuma["Uptime Kuma<br/>status"] ~~~ certs["cert-manager<br/>TLS"] ~~~ secrets["External Secrets<br/>secrets"] ~~~ netpol["Network policies<br/>firewall"]
-        end
-
-        subgraph storage["Storage"]
-            direction LR
-            lh["Longhorn<br/>disks"] ~~~ sw["SeaweedFS<br/>S3"] ~~~ nfs["NFS<br/>media"] ~~~ pg["CloudNativePG<br/>Postgres"]
-        end
-
-        edge --> apps --> platform --> storage
+    subgraph edge["Front door"]
+        direction LR
+        mlb["MetalLB"]:::front --> traefik["Traefik ×2"]:::front
     end
 
-    users --> edge
+    apps{{"Self-hosted apps"}}:::app
+
+    subgraph platform["Platform"]
+        direction LR
+        ak["Authentik"]:::plat ~~~ kuma["Uptime Kuma"]:::plat ~~~ certs["cert-manager"]:::plat ~~~ secrets["External Secrets"]:::plat
+    end
+
+    subgraph storage["Storage"]
+        direction LR
+        lh["Longhorn"]:::store ~~~ sw["SeaweedFS"]:::store ~~~ nfs["NFS"]:::store ~~~ pg["CloudNativePG"]:::store
+    end
+
+    users ==> edge ==> apps ==> platform ==> storage
+    git -. Flux .-> edge
+
+    classDef entry fill:#1F2937,stroke:#9CA3AF,color:#F9FAFB
+    classDef front fill:#0EA5E9,stroke:#0369A1,color:#FFFFFF
+    classDef app   fill:#8B5CF6,stroke:#5B21B6,color:#FFFFFF
+    classDef plat  fill:#F97316,stroke:#C2410C,color:#FFFFFF
+    classDef store fill:#10B981,stroke:#047857,color:#FFFFFF
+
+    style edge     fill:#0EA5E914,stroke:#0EA5E9,stroke-width:2px
+    style platform fill:#F9731614,stroke:#F97316,stroke-width:2px
+    style storage  fill:#10B98114,stroke:#10B981,stroke-width:2px
+    linkStyle default stroke:#9CA3AF,stroke-width:2px
 ```
 
 | Layer | Component | What it does |
@@ -71,7 +78,7 @@ flowchart TB
 | Platform | kube-network-policies | Enforces NetworkPolicies so namespaces can't talk freely |
 | Storage | Longhorn | Replicated disks for anything that needs to keep data |
 | Storage | SeaweedFS | Internal S3 storage, used for backups |
-| Storage | NFS | Big shared storage for media |
+| Storage | NFS | Big shared storage for bulk data |
 | Storage | CloudNativePG | Postgres databases (Authentik's lives here) |
 
 ## Networking
@@ -123,35 +130,6 @@ version: v0.9.0
 ```
 
 Postgres majors are the one exception: Renovate skips them, and they're done by hand.
-
-<details>
-<summary><b>Postgres major upgrades</b></summary>
-
-<br>
-
-Bumping the major of the CNPG Cluster's `imageName` makes CNPG run an offline `pg_upgrade`. Postgres is down for the whole upgrade, the replicas are rebuilt from scratch, and nothing rolls back by itself.
-
-1. Check that authentik supports the new major. Its CI tests the oldest and newest supported versions (`psql:` matrix in `.github/workflows/ci-main.yml` at the release tag).
-2. Take a fresh dump and check that the job succeeds:
-   ```sh
-   kubectl create job -n authentik --from=cronjob/authentik-postgres-dump authentik-postgres-dump-manual
-   ```
-3. Stop authentik so it doesn't crash-loop and sit in backoff afterwards:
-   ```sh
-   flux suspend hr authentik -n authentik
-   kubectl scale deploy -n authentik authentik-server authentik-worker --replicas=0
-   ```
-4. Bump the major in both `postgres-cluster.yaml` and `postgres-backup-cronjob.yaml`. Keep the distro suffix the same (e.g. `-standard-trixie`): the upgrade job runs the old binaries on the new image. Change distro in a separate step, within one major, and only to a distro CNPG still builds. Push.
-5. Wait for `kubectl get cluster -n authentik authentik-postgres` to show `Cluster in healthy state` with all three instances on the new image.
-6. Start authentik again:
-   ```sh
-   kubectl scale deploy -n authentik authentik-server authentik-worker --replicas=2
-   flux resume hr authentik -n authentik
-   ```
-
-If the upgrade job fails, the old data directory is left untouched. Revert `imageName`, then delete the `authentik-postgres-<n>-major-upgrade` job.
-
-</details>
 
 ## Directories
 

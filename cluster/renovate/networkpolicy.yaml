@@ -1,0 +1,11 @@
+# Tier 3: renovate. A nightly CronJob with no Service: nothing connects in.
+# Egress open (GitHub API, registries).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: renovate
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress

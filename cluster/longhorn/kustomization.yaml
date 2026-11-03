@@ -8,3 +8,4 @@ resources:
   - storageclass-retain.yaml
   - ingressRoute.yaml
   - networkpolicy.yaml
+  - csi-health-service.yaml

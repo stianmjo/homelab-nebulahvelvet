@@ -1,0 +1,17 @@
+# Health-only target for Uptime Kuma: the CSI plugin's /healthz (9808) says
+# "ok" and serves nothing else. The UI (8000) proxies the full Longhorn API,
+# so Kuma (internet-facing) must not monitor that.
+apiVersion: v1
+kind: Service
+metadata:
+  name: longhorn-csi-health
+  namespace: longhorn-system
+spec:
+  type: ClusterIP
+  selector:
+    app: longhorn-csi-plugin
+  ports:
+    - name: healthz
+      port: 9808
+      targetPort: 9808
+      protocol: TCP

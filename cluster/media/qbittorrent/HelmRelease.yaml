@@ -62,8 +62,13 @@ spec:
               VPN_TYPE: wireguard
               VPN_INTERFACE: wg0
 
-              # Allow WebUI + qbit listen port into the pod (from LAN/cluster)
-              FIREWALL_INPUT_PORTS: "8080,6881"
+              # Allow WebUI, qbit listen port and the shared VPN proxy into the pod
+              FIREWALL_INPUT_PORTS: "8080,6881,8888"
+
+              # Shared VPN egress for the rest of media (FlareSolverr, *arr proxy settings)
+              HTTPPROXY: "on"
+              HTTPPROXY_LISTENING_ADDRESS: ":8888"
+              HTTPPROXY_STEALTH: "on"          # no Via/X-Forwarded-For headers
 
               # Allow access to local/cluster networks (Traefik, DNS, etc.)
               FIREWALL_OUTBOUND_SUBNETS: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
@@ -97,6 +102,8 @@ spec:
           bittorrent-udp:
             port: 6881
             protocol: UDP
+          vpn-proxy:                         # gluetun HTTP proxy, egress via the VPN
+            port: 8888
 
     persistence:
       config:

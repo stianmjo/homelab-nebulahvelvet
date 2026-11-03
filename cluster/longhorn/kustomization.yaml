@@ -7,3 +7,4 @@ resources:
   - HelmRelease.yaml
   - storageclass-retain.yaml
   - ingressRoute.yaml
+  - networkpolicy.yaml

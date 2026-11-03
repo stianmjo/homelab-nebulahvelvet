@@ -20,9 +20,12 @@ spec:
               emptyDir: {}
           initContainers:
             - name: pg-dump
-              image: postgres:17-alpine
+              # Same image as the Cluster's imageName so pg_dump always matches the
+              # server major (Renovate bumps both in one PR: same depName)
+              image: ghcr.io/cloudnative-pg/postgresql:17.11-standard-bullseye
               command:
-                - sh
+                # bash, not sh: /bin/sh is dash here, which lacks pipefail
+                - bash
                 - -c
                 - |
                   set -eo pipefail

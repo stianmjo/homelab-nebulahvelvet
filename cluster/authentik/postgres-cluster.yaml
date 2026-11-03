@@ -5,6 +5,12 @@ metadata:
   namespace: authentik
 spec:
   instances: 3
+  # Pinned explicitly: unset, the CNPG webhook fills in its default at creation
+  # and it never moves (was stuck on 17.4). Stay on the bullseye base the
+  # cluster was created with; a distro change (-> trixie) is its own step.
+  # Majors are disabled in renovate.json (needs a deliberate pg_upgrade).
+  # renovate: datasource=docker depName=ghcr.io/cloudnative-pg/postgresql versioning=docker
+  imageName: ghcr.io/cloudnative-pg/postgresql:17.11-standard-bullseye
   primaryUpdateStrategy: unsupervised
 
   bootstrap:

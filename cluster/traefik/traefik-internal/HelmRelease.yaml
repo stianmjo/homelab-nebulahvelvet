@@ -38,6 +38,9 @@ spec:
       kubernetesCRD:
         enabled: true
         ingressClass: traefik-internal
+        # Collision-safe generated names (e.g. media_sonarr_0). Changes the router/
+        # service labels in metrics; nothing references the legacy names.
+        safeNaming: true
 
     ingressClass:
       enabled: false
@@ -53,6 +56,15 @@ spec:
     api:
       dashboard: true
 
+    global:
+      # Renovate handles Traefik updates; skip the startup call to Traefik's servers
+      checkNewVersion: false
+      # Drop request headers whose names alias another (X_Auth_User / X.Auth.User for
+      # X-Auth-User). Backends that normalize names (PHP, CGI, WSGI, nginx) could
+      # otherwise be spoofed, including headers set by ForwardAuth. Applies to every
+      # entry point; `delete` rather than `reject` so odd clients aren't 400'd.
+      aliasHeadersStrategy: delete
+
     ports:
       # INTERNAL HTTP (80)
       web:
@@ -60,6 +72,11 @@ spec:
           default: true
         port: 8000       # container port
         exposedPort: 80  # MetalLB / node port 80
+        http:
+          # Only NUL is rejected: SeaweedFS S3 is served here, and S3 clients
+          # percent-encode ; % ? # \ in object keys, so those must pass. LAN only.
+          encodedCharacters:
+            allowEncodedNullCharacter: false
 
       # No HTTPS internally (for now)
       websecure:
@@ -67,6 +84,19 @@ spec:
           default: true
         port: 8443
         exposedPort: 443
+        # No route uses it; same hardening as the public websecure
+        http:
+          # Reject these encoded characters in the request path (not the query):
+          # they enable path traversal / split-view against backends that decode
+          # them. Allow one per route with the EncodedCharacters middleware if needed.
+          encodedCharacters:
+            allowEncodedSlash: false
+            allowEncodedBackSlash: false
+            allowEncodedNullCharacter: false
+            allowEncodedSemicolon: false
+            allowEncodedPercent: false
+            allowEncodedQuestionMark: false
+            allowEncodedHash: false
 
       # Do NOT expose the traefik port; dashboard goes via IngressRoute on 'web'
       traefik:

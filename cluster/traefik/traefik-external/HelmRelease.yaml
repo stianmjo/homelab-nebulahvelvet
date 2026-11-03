@@ -48,7 +48,13 @@ spec:
       kubernetesCRD:
         enabled: true
         ingressClass: traefik-external
+        # Public routes live in their app's namespace but share the security
+        # middlewares (fail2ban, bot-wrangler, rate limits) defined in this one.
+        # Traefik logs a startup warning while this is on; that's expected.
         allowCrossNamespace: true
+        # Collision-safe generated names (e.g. media_jellyfin_0). Changes the router/
+        # service labels in metrics; nothing references the legacy names.
+        safeNaming: true
 
     ingressClass:
       enabled: false
@@ -79,18 +85,46 @@ spec:
     additionalArguments:
       - "--api.insecure=true"
 
+    global:
+      # Renovate handles Traefik updates; skip the startup call to Traefik's servers
+      checkNewVersion: false
+      # Drop request headers whose names alias another (X_Auth_User / X.Auth.User for
+      # X-Auth-User). Backends that normalize names (PHP, CGI, WSGI, nginx) could
+      # otherwise be spoofed, including headers set by ForwardAuth. Applies to every
+      # entry point; `delete` rather than `reject` so odd clients aren't 400'd.
+      aliasHeadersStrategy: delete
+
     ports:
       web:
         expose:
           default: true
         port: 8000
         exposedPort: 80
+        # No route uses plain HTTP publicly: send everything to HTTPS
+        http:
+          redirections:
+            entryPoint:
+              to: websecure
+              scheme: https
+              permanent: true
 
       websecure:
         expose:
           default: true
         port: 8443
         exposedPort: 443
+        http:
+          # Reject these encoded characters in the request path (not the query):
+          # they enable path traversal / split-view against backends that decode
+          # them. Allow one per route with the EncodedCharacters middleware if needed.
+          encodedCharacters:
+            allowEncodedSlash: false
+            allowEncodedBackSlash: false
+            allowEncodedNullCharacter: false
+            allowEncodedSemicolon: false
+            allowEncodedPercent: false
+            allowEncodedQuestionMark: false
+            allowEncodedHash: false
 
       traefik:
         port: 8080

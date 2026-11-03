@@ -1,0 +1,53 @@
+# traefik-external: the entry points are open to everyone (internet and LAN via
+# MetalLB, pods using public hostnames). The API/dashboard port (8080, read-only
+# but it lists every route and middleware) is reachable only from
+# traefik-internal, which serves traefik-external.local.net. Metrics (9100) stay
+# closed until a Prometheus exists. Egress open (backends, ForwardAuth, plugins).
+# kubelet probes are root-owned node traffic and always allowed by kube-network-policies.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: traefik-external
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-entrypoints
+  namespace: traefik-external
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: traefik
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: 8000
+        - protocol: TCP
+          port: 8443
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-traefik-internal-to-dashboard
+  namespace: traefik-external
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: traefik
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: traefik-internal
+      ports:
+        - protocol: TCP
+          port: 8080

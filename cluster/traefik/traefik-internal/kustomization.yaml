@@ -5,3 +5,4 @@ resources:
   - namespace.yaml
   - HelmRelease.yaml
   - dashboard-ingressRoute.yaml
+  - networkpolicy.yaml

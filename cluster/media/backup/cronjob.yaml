@@ -47,6 +47,9 @@ spec:
       ttlSecondsAfterFinished: 86400
       backoffLimit: 2
       template:
+        metadata:
+          labels:
+            app: arr-backup   # selected by its egress NetworkPolicy
         spec:
           serviceAccountName: arr-backup
           restartPolicy: OnFailure

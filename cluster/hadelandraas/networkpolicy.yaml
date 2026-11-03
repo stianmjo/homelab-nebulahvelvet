@@ -1,6 +1,7 @@
 # Tier 3: hadelandraas. traefik-external reaches the nginx frontend (80);
 # the frontend proxies the PocketBase API to the backend (8090) inside the
-# namespace. Nothing else reaches the backend. Egress open (git-sync, mail).
+# namespace. Nothing else reaches the backend. Egress: internet (git-sync,
+# mail) and own namespace.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -43,3 +44,60 @@ spec:
       ports:
         - protocol: TCP
           port: 80
+---
+# Egress: internet yes, private ranges no. DNS goes to CoreDNS, which
+# forwards to the router itself (kube-system has no egress policy).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-egress
+  namespace: hadelandraas
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-egress-dns-and-same-namespace
+  namespace: hadelandraas
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
+        - podSelector: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-egress-internet
+  namespace: hadelandraas
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+                  - 10.0.0.0/8       # LAN, HOMELAB, pods, services
+                  - 172.16.0.0/12
+                  - 192.168.0.0/16
+                  - 100.64.0.0/10    # CGNAT (Tailscale and the like)
+                  - 169.254.0.0/16   # link-local

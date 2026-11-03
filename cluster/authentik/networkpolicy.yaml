@@ -1,7 +1,8 @@
 # Tier 3: authentik. Server is reached by traefik-external (UI and the
 # forwardAuth address, Service 80 → 9000) and uptime-kuma. Postgres is only
 # used inside the namespace (server, worker, backup job, replication); the
-# CloudNativePG operator talks to each instance's status port. Egress open.
+# CloudNativePG operator talks to each instance's status port. Egress: internet,
+# own namespace, API server, and S3 for the dump job; no other private ranges.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -71,6 +72,105 @@ spec:
           podSelector:
             matchLabels:
               app.kubernetes.io/name: cloudnative-pg
+      ports:
+        - protocol: TCP
+          port: 8000
+---
+# Egress: internet yes, private ranges no. DNS goes to CoreDNS, which
+# forwards to the router itself (kube-system has no egress policy).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-egress
+  namespace: authentik
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-egress-dns-and-same-namespace
+  namespace: authentik
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
+        - podSelector: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-egress-internet
+  namespace: authentik
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+                  - 10.0.0.0/8       # LAN, HOMELAB, pods, services
+                  - 172.16.0.0/12
+                  - 192.168.0.0/16
+                  - 100.64.0.0/10    # CGNAT (Tailscale and the like)
+                  - 169.254.0.0/16   # link-local
+---
+# authentik worker (outpost integration) and the CNPG instance managers use the API.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-egress-apiserver
+  namespace: authentik
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 10.0.2.2/32   # kube-apiserver on mpc01 (kubernetes Service endpoint)
+      ports:
+        - protocol: TCP
+          port: 6443
+---
+# The dump job uploads to s3.local.net (10.0.2.83), i.e. through traefik-internal.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-egress-dump-to-s3
+  namespace: authentik
+spec:
+  podSelector:
+    matchLabels:
+      app: authentik-postgres-dump
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: traefik-internal
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
       ports:
         - protocol: TCP
           port: 8000

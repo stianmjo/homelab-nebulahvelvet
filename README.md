@@ -14,7 +14,7 @@ A bare-metal Kubernetes cluster at home, run entirely from this repo.
 
 ---
 
-Four small machines, one Git repo. Everything the cluster runs lives under `cluster/`, and Flux keeps the cluster in sync with `main`. To change something, edit the YAML and push.
+Four small machines, one Git repo. Everything the cluster runs lives under `cluster/`, and Flux keeps the cluster in sync with `main`.
 
 ## Hardware
 
@@ -83,23 +83,25 @@ flowchart TB
 
 ## Networking
 
-There are two Traefik instances, each with its own IP:
+Two Traefik instances, each with its own IP:
 
-- **traefik-external** handles public `*.nebulahvelvet.no` sites over HTTPS. Every route passes bot blocking, fail2ban and rate limits before it reaches an app.
-- **traefik-internal** handles `*.local.net` sites on the home network over plain HTTP.
+- **traefik-external** serves public `*.nebulahvelvet.no` sites over HTTPS. Every route passes bot blocking, fail2ban and rate limits before it reaches an app. Plain HTTP redirects to HTTPS, and encoded characters in request paths are rejected.
+- **traefik-internal** serves `*.local.net` sites on the home network over plain HTTP. Routes without their own login (Longhorn, the SeaweedFS filer, both Traefik dashboards) only accept LAN and HOMELAB clients, so pods can't reach them through the LoadBalancer IP.
 
-All routes are Traefik `IngressRoute`s; regular Kubernetes Ingress is switched off. Each route picks its Traefik with `spec.ingressClassName`, and public routes bring their own `certificate.yaml`. To add one, copy [cluster/template/ingressRoute.yaml](cluster/template/ingressRoute.yaml).
+All routes are Traefik `IngressRoute`s that select their Traefik with `spec.ingressClassName`; regular Kubernetes Ingress is off. Public routes carry their own `certificate.yaml`.
 
 ### Network policies
 
-Every app namespace starts closed. Nothing can reach its pods except:
+Every app namespace is closed by default. Ingress is limited to:
 
 - pods in the same namespace
 - the Traefik instance that serves it, on the app's own port only
 
-The secrets path is locked down the hardest. Only External Secrets can talk to proton-relay, and the relay can only make DNS lookups and HTTPS calls out to Proton. Uptime Kuma gets a separate health-only port so it can watch the relay without reaching any secrets.
+Egress from internet-facing namespaces (authentik, media, crafty, hadelandraas) reaches the internet but not private ranges: no LAN, no nodes, no other namespaces. The only exceptions are DNS via CoreDNS, the API server where an app needs it, and S3 for the authentik dump job. The *arr apps go one step further and only leave through the VPN. Uptime Kuma keeps open egress, since monitoring the LAN is its job.
 
-Policies live next to each app as `networkpolicy.yaml`. If something breaks, reverting that one file's commit fixes it.
+The secrets path is the tightest. Only External Secrets talks to proton-relay, and the relay only makes DNS lookups and HTTPS calls to Proton. Uptime Kuma watches it on a separate health-only port.
+
+Policies live next to each app as `networkpolicy.yaml`.
 
 ## Secrets
 
@@ -109,20 +111,9 @@ Nothing secret is stored in Git. Secrets live in a Proton Pass vault, and [proto
 Proton Pass → proton-relay → External Secrets → Kubernetes Secret
 ```
 
-To pull a secret again right now:
-
-```sh
-kubectl annotate externalsecret <name> -n <namespace> force-sync=$(date +%s) --overwrite
-```
-
 ## Updates
 
-Renovate runs nightly inside the cluster and opens a PR for every new version. It finds most versions by itself:
-
-- chart versions in `HelmRelease`s
-- `image:` lines, and `image.repository` / `image.tag` inside `HelmRelease` values
-
-So the rule is simple: **pin an exact version and don't annotate it.** Only when Renovate can't see a version does it get a comment on the line above:
+Renovate runs nightly inside the cluster and opens a PR for every new version, majors included. It reads chart versions in `HelmRelease`s, `image:` lines, and `image.repository` / `image.tag` in `HelmRelease` values. Versions it can't see carry a comment on the line above:
 
 ```yaml
 # renovate: datasource=github-tags depName=tomMoulard/fail2ban

@@ -3,9 +3,8 @@ kind: IngressRoute
 metadata:
   name: bazarr
   namespace: media
-  annotations:
-    kubernetes.io/ingress.class: traefik-internal
 spec:
+  ingressClassName: traefik-internal
   entryPoints:
     - web
   routes:

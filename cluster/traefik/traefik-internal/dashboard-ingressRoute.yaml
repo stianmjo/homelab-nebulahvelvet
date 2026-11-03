@@ -1,0 +1,17 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  # Not the chart's old name (traefik-internal-dashboard): Helm deletes that
+  # object when the chart stops rendering it, so a shared name would 404
+  name: traefik-internal-dashboard-lan
+  namespace: traefik-internal
+spec:
+  ingressClassName: traefik-internal
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`traefik-internal.local.net`)
+      kind: Rule
+      services:
+        - name: api@internal
+          kind: TraefikService

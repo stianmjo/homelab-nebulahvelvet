@@ -3,9 +3,8 @@ kind: IngressRoute
 metadata:
   name: longhorn-ui
   namespace: longhorn-system
-  annotations:
-    kubernetes.io/ingress.class: traefik-internal
 spec:
+  ingressClassName: traefik-internal
   entryPoints:
     - web
   routes:

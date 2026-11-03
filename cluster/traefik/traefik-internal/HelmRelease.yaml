@@ -98,12 +98,7 @@ spec:
 
     ingressRoute:
       dashboard:
-        enabled: true
-        # The CRD provider filters on this class; without it the route is ignored (404)
-        annotations:
-          kubernetes.io/ingress.class: traefik-internal
-        # Hostname you want to use on LAN
-        matchRule: Host(`traefik-internal.local.net`)
-        entryPoints:
-          - web
-        # (no TLS here -> plain http)
+        # Defined in dashboard-ingressRoute.yaml instead: the chart only sets
+        # spec.ingressClassName when ingressClass.enabled is true, and the
+        # kubernetes.io/ingress.class annotation is deprecated in Traefik 3.7
+        enabled: false

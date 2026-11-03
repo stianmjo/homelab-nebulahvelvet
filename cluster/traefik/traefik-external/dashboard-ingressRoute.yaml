@@ -3,9 +3,8 @@ kind: IngressRoute
 metadata:
   name: traefik-external-dashboard-via-internal
   namespace: traefik-external
-  annotations:
-    kubernetes.io/ingress.class: traefik-internal
 spec:
+  ingressClassName: traefik-internal
   entryPoints:
     - web
   routes:

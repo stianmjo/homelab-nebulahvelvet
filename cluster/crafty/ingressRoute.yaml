@@ -3,8 +3,6 @@ kind: Middleware
 metadata:
   name: crafty-ws-headers
   namespace: crafty
-  annotations:
-    kubernetes.io/ingress.class: traefik-internal
 spec:
   headers:
     customRequestHeaders:
@@ -15,9 +13,8 @@ kind: IngressRoute
 metadata:
   name: crafty-internal
   namespace: crafty
-  annotations:
-    kubernetes.io/ingress.class: traefik-internal
 spec:
+  ingressClassName: traefik-internal
   entryPoints:
     - web
   routes:
@@ -36,9 +33,8 @@ kind: IngressRoute
 metadata:
   name: crafty-external
   namespace: crafty
-  annotations:
-    kubernetes.io/ingress.class: traefik-external
 spec:
+  ingressClassName: traefik-external
   entryPoints:
     - websecure
   routes:

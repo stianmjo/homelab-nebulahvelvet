@@ -3,9 +3,8 @@ kind: IngressRoute
 metadata:
   name: uptime-kuma
   namespace: uptime-kuma
-  annotations:
-    kubernetes.io/ingress.class: traefik-external
 spec:
+  ingressClassName: traefik-external
   entryPoints:
     - websecure
   routes:

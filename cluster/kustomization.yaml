@@ -13,7 +13,6 @@ resources:
   - nfs-provisioner
   - media
   - seaweedfs
-  - crafty
   - cnpg
   - authentik
   - apt-scanner

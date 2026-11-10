@@ -71,6 +71,12 @@ spec:
               key: secret-key
         - name: TZ
           value: Europe/Oslo
+        # Senders whose X-Forwarded-For is trusted for the client IP (events,
+        # policies, GeoIP). The default is every private range; only
+        # traefik-external pods reach the server (networkpolicy.yaml), so this
+        # is narrowed to the flannel pod network.
+        - name: AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS
+          value: "10.244.0.0/16"
         - name: AUTHENTIK_EMAIL__HOST
           value: smtp.protonmail.ch
         - name: AUTHENTIK_EMAIL__PORT

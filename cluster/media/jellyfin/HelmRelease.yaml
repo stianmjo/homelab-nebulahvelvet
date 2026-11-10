@@ -87,6 +87,42 @@ spec:
       cache:
         enabled: false
 
+    # Real client IPs: Jellyfin ignores X-Forwarded-For unless the sender is in
+    # KnownProxies (network.xml), so it logged the Traefik pod IP. Only
+    # traefik-external pods can reach Jellyfin (media networkpolicy.yaml), and
+    # their IPs change, so the whole pod CIDR is trusted (the docs name only IPs;
+    # 10.11 also parses CIDR entries as networks). Trusted proxies get
+    # X-Forwarded-For/-Proto/-Host honoured. This pins KnownProxies
+    # on every start; a value set in the dashboard is replaced at the next restart.
+    # First boot (no network.xml yet) is skipped; the next restart applies it.
+    extraInitContainers:
+      - name: known-proxies
+        image: busybox:1.38.0
+        env:
+          - name: KNOWN_PROXIES_CIDR
+            value: 10.244.0.0/16   # flannel pod network
+        command:
+          - sh
+          - -c
+          - |
+            set -eu
+            f=/config/config/network.xml
+            [ -f "$f" ] || { echo "no $f yet (first boot), skipping"; exit 0; }
+            sed -i \
+              -e '/<KnownProxies>.*<\/KnownProxies>/d' \
+              -e '/<KnownProxies *\/>/d' \
+              -e '/<KnownProxies>/,/<\/KnownProxies>/d' \
+              -e "s#</NetworkConfiguration>#  <KnownProxies>\n    <string>${KNOWN_PROXIES_CIDR}</string>\n  </KnownProxies>\n</NetworkConfiguration>#" \
+              "$f"
+            grep -A2 '<KnownProxies>' "$f"
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
+        volumeMounts:
+          - name: config
+            mountPath: /config
+
     volumes:
       - name: jellyfin-cache
         persistentVolumeClaim:

@@ -113,6 +113,15 @@ spec:
           default: true
         port: 8443
         exposedPort: 443
+        # Client IP: Traefik is the first proxy (the router only port-forwards) and
+        # externalTrafficPolicy: Local keeps the client's source IP. No trusted
+        # IPs: client-sent X-Forwarded-* are replaced, and the client's RemoteAddr
+        # goes into X-Forwarded-For. Backends trust Traefik by pod CIDR
+        # (Jellyfin KnownProxies, authentik TRUSTED_PROXY_CIDRS). A proxy added in
+        # front of Traefik later goes in trustedIPs; insecure stays off.
+        forwardedHeaders:
+          trustedIPs: []
+          insecure: false
         http:
           # Reject these encoded characters in the request path (not the query):
           # they enable path traversal / split-view against backends that decode

@@ -33,7 +33,7 @@ spec:
         # Upserts the superuser from the secret on every pod start, with the
         # encryption key, so a Proton Pass password change applies on restart.
         - name: superuser-upsert
-          image: ghcr.io/muchobien/pocketbase:0.40.6
+          image: ghcr.io/muchobien/pocketbase:0.42.2
           command: ["/bin/sh", "-c"]
           args:
             - >-
@@ -59,7 +59,7 @@ spec:
               memory: 256Mi
       containers:
         - name: pocketbase
-          image: ghcr.io/muchobien/pocketbase:0.40.6
+          image: ghcr.io/muchobien/pocketbase:0.42.2
           command: ["/usr/local/bin/pocketbase"]
           args:
             - serve

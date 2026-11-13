@@ -51,7 +51,7 @@ spec:
                   mountPath: /backup
           containers:
             - name: upload
-              image: amazon/aws-cli:2.39.6
+              image: amazon/aws-cli:2.40.2
               command:
                 - sh
                 - -c

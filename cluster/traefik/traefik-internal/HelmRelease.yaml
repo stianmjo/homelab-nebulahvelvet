@@ -18,7 +18,7 @@ spec:
   chart:
     spec:
       chart: traefik
-      version: "42.3.1"
+      version: "42.4.0"
       sourceRef:
         kind: HelmRepository
         name: traefik
@@ -72,6 +72,12 @@ spec:
           default: true
         port: 8000       # container port
         exposedPort: 80  # MetalLB / node port 80
+        # Chart 42.4.0 default, set here so it's explicit: keep accepting requests
+        # 5s after SIGTERM while the pod leaves the Service endpoints. Pod shutdown
+        # takes 5s longer (well inside the 60s terminationGracePeriodSeconds).
+        transport:
+          lifeCycle:
+            requestAcceptGraceTimeout: 5s
         http:
           # Only NUL is rejected: SeaweedFS S3 is served here, and S3 clients
           # percent-encode ; % ? # \ in object keys, so those must pass. LAN only.
@@ -84,6 +90,12 @@ spec:
           default: true
         port: 8443
         exposedPort: 443
+        # Chart 42.4.0 default, set here so it's explicit: keep accepting requests
+        # 5s after SIGTERM while the pod leaves the Service endpoints. Pod shutdown
+        # takes 5s longer (well inside the 60s terminationGracePeriodSeconds).
+        transport:
+          lifeCycle:
+            requestAcceptGraceTimeout: 5s
         # No route uses it; same hardening as the public websecure
         http:
           # Reject these encoded characters in the request path (not the query):

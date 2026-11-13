@@ -4,7 +4,7 @@ metadata:
   name: sw
   namespace: seaweedfs
 spec:
-  image: chrislusf/seaweedfs:4.52
+  image: chrislusf/seaweedfs:4.53
   volumeServerDiskCount: 1
 
   master:

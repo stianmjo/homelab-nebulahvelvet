@@ -13,7 +13,7 @@ spec:
   # pg_upgrade (downtime, replicas recloned, no auto-rollback), and old/new
   # images must share a distro. 17 -> 18 done 2026-11-03.
   # renovate: datasource=docker depName=ghcr.io/cloudnative-pg/postgresql versioning=docker
-  imageName: ghcr.io/cloudnative-pg/postgresql:18.6-standard-trixie
+  imageName: ghcr.io/cloudnative-pg/postgresql:18.7-standard-trixie
   primaryUpdateStrategy: unsupervised
   # Promote an already-updated replica before touching the primary. The default
   # (restart) took the primary down ~3 min on 2026-11-03 and authentik

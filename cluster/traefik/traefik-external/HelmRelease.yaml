@@ -18,7 +18,7 @@ spec:
   chart:
     spec:
       chart: traefik
-      version: "42.3.1"
+      version: "42.4.0"
       sourceRef:
         kind: HelmRepository
         name: traefik
@@ -100,6 +100,12 @@ spec:
           default: true
         port: 8000
         exposedPort: 80
+        # Chart 42.4.0 default, set here so it's explicit: keep accepting requests
+        # 5s after SIGTERM while the pod leaves the Service endpoints. Pod shutdown
+        # takes 5s longer (well inside the 60s terminationGracePeriodSeconds).
+        transport:
+          lifeCycle:
+            requestAcceptGraceTimeout: 5s
         # No route uses plain HTTP publicly: send everything to HTTPS
         http:
           redirections:
@@ -113,6 +119,12 @@ spec:
           default: true
         port: 8443
         exposedPort: 443
+        # Chart 42.4.0 default, set here so it's explicit: keep accepting requests
+        # 5s after SIGTERM while the pod leaves the Service endpoints. Pod shutdown
+        # takes 5s longer (well inside the 60s terminationGracePeriodSeconds).
+        transport:
+          lifeCycle:
+            requestAcceptGraceTimeout: 5s
         # Client IP: Traefik is the first proxy (the router only port-forwards) and
         # externalTrafficPolicy: Local keeps the client's source IP. No trusted
         # IPs: client-sent X-Forwarded-* are replaced, and the client's RemoteAddr

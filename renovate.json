@@ -31,6 +31,11 @@
       "allowedVersions": "/^v?[0-9]+(\\.[0-9]+){0,3}([-.][0-9A-Za-z]+)*$/"
     },
     {
+      "description": "No apiVersion bumps: the kubernetes-api datasource is a static list, blind to which versions the cluster's CRDs serve (proposed notification.toolkit.fluxcd.io/v1 on Flux 2.7, which only serves v1beta3)",
+      "matchDatasources": ["kubernetes-api"],
+      "enabled": false
+    },
+    {
       "description": "Services whose manifests sit in subdirectories: scope is the service, not the subdirectory",
       "matchFileNames": ["cluster/github-runner/**"],
       "semanticCommitScope": "github-runner"

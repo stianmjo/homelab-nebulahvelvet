@@ -36,7 +36,7 @@ spec:
                 - name: GITHUB_PAT
                   valueFrom:
                     secretKeyRef:
-                      name: arc-github-auth
+                      name: arc-github-auth-v2
                       key: github_token
               resources:
                 requests:

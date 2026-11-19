@@ -19,7 +19,7 @@ spec:
   values:
     # repo or org:
     githubConfigUrl: "https://github.com/stianmjo/homelab-nebulahvelvet"
-    githubConfigSecret: "arc-github-auth"
+    githubConfigSecret: "arc-github-auth-v2"
 
     minRunners: 1
     maxRunners: 5

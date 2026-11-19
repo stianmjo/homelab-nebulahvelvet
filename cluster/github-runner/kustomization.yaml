@@ -8,3 +8,4 @@ resources:
   - scaler
   - arc-status-cronjob.yaml
   - networkpolicy.yaml
+  - external-secret.yaml

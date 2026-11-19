@@ -5,3 +5,4 @@ resources:
   - namespace.yaml
   - cronjob.yaml
   - networkpolicy.yaml
+  - external-secret.yaml

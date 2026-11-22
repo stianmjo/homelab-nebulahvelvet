@@ -27,7 +27,7 @@ spec:
         containers:
           app:
             image:
-              repository: ghcr.io/linuxserver/sonarr
+              repository: lscr.io/linuxserver/sonarr
               tag: 4.0.20
             env:
               TZ: Europe/Oslo

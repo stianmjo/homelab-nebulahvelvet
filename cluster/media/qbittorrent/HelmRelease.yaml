@@ -29,7 +29,7 @@ spec:
         containers:
           app:
             image:
-              repository: ghcr.io/linuxserver/qbittorrent
+              repository: lscr.io/linuxserver/qbittorrent
               tag: 5.1.4-r1-ls435
             env:
               TZ: Europe/Oslo

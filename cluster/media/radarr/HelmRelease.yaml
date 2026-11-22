@@ -27,7 +27,7 @@ spec:
         containers:
           app:
             image:
-              repository: ghcr.io/linuxserver/radarr
+              repository: lscr.io/linuxserver/radarr
               tag: 7.0.3
             env:
               TZ: Europe/Oslo

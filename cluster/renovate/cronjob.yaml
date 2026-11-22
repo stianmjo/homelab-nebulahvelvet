@@ -10,8 +10,13 @@ spec:
   failedJobsHistoryLimit: 2
   jobTemplate:
     spec:
-      ttlSecondsAfterFinished: 86400
-      backoffLimit: 1
+      # A failed Job stays visible for a week instead of a day.
+      ttlSecondsAfterFinished: 604800
+      # Retries happen inside the container (see args), spaced out so a
+      # registry rate limit has time to clear. A Failed Job means all
+      # attempts failed.
+      backoffLimit: 0
+      activeDeadlineSeconds: 10800
       template:
         spec:
           restartPolicy: Never
@@ -25,8 +30,21 @@ spec:
                 limits:
                   memory: "1Gi"
                   cpu: "1000m"
+              # renovate-entrypoint.sh execs any executable it is given, so the
+              # image's entrypoint still runs. With RENOVATE_EXIT_CODE_FOR_ERRORS
+              # a run that ends in an error state (external-host-error etc.)
+              # exits non-zero; up to 3 attempts, 15 minutes apart.
               args:
-                - "stianmjo/homelab-nebulahvelvet"
+                - bash
+                - -c
+                - |
+                  for attempt in 1 2 3; do
+                    renovate stianmjo/homelab-nebulahvelvet && exit 0
+                    rc=$?
+                    echo "renovate exited ${rc} (attempt ${attempt}/3)"
+                    [ "${attempt}" -lt 3 ] && sleep 900
+                  done
+                  exit "${rc}"
               env:
                 - name: RENOVATE_TOKEN
                   valueFrom:
@@ -43,17 +61,21 @@ spec:
                   value: Europe/Oslo
                 - name: LOG_LEVEL
                   value: debug
-                  
+
                 - name: RENOVATE_GIT_AUTHOR
                   value: "Renovate Bot <renovate@nebulahvelvet.no>"
 
-                - name: RENOVATE_CONCURRENT_REQUESTS
-                  value: "10"
-                - name: RENOVATE_HTTP_CACHE
+                # Experimental, global-only: exit with the result's exit code
+                # (e.g. 7 for external-host-error) instead of always 0.
+                - name: RENOVATE_EXIT_CODE_FOR_ERRORS
                   value: "true"
 
-                # ghcr.io answers anonymous tag listings from this IP with 429,
-                # which aborts the whole run. Logged in, the limit is per token.
+                # Per-host request limits live in renovate.json hostRules.
+
+                # ghcr.io rate-limits tag listings from this IP (429), which
+                # aborts the whole run. The login covers token and tag
+                # requests; the docker datasource's first auth probe is always
+                # anonymous, so linuxserver images are pulled via lscr.io.
                 # GHCR_TOKEN is a classic read:packages PAT (ghcr.io rejects
                 # fine-grained tokens); see external-secret.yaml.
                 - name: RENOVATE_DETECT_HOST_RULES_FROM_ENV

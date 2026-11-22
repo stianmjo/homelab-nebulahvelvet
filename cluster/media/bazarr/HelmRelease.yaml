@@ -27,7 +27,7 @@ spec:
         containers:
           app:
             image:
-              repository: ghcr.io/linuxserver/bazarr
+              repository: lscr.io/linuxserver/bazarr
               tag: v1.5.4-ls330
             env:
               TZ: Europe/Oslo

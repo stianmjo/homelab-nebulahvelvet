@@ -61,9 +61,16 @@
   ],
   "hostRules": [
     {
+      "description": "ghcr.io answers bursts from this IP with 429, which aborts the run; run time does not matter",
       "matchHost": "ghcr.io",
-      "concurrentRequestLimit": 2,
-      "maxRequestsPerSecond": 2
+      "concurrentRequestLimit": 1,
+      "maxRequestsPerSecond": 1
+    },
+    {
+      "description": "lscr.io fronts ghcr.io for linuxserver images",
+      "matchHost": "lscr.io",
+      "concurrentRequestLimit": 1,
+      "maxRequestsPerSecond": 1
     }
   ],
   "semanticCommits": "enabled",

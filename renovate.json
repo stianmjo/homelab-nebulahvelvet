@@ -73,6 +73,7 @@
       "maxRequestsPerSecond": 1
     }
   ],
+  "separateMajorMinor": false,
   "semanticCommits": "enabled",
   "semanticCommitType": "chore",
   "semanticCommitScope": "{{parentDir}}",

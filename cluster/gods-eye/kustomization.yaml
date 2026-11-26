@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - externalsecret.yaml
+  - configmap-bridge.yaml
   - pvc.yaml
   - deployment.yaml
   - service.yaml

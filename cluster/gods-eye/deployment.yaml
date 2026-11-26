@@ -66,7 +66,7 @@ spec:
               mountPath: /tmp
         # Same steps as the upstream Dockerfile: npm ci, no Chromium download.
         - name: deps
-          image: node:24.22.2-slim
+          image: node:26.13.1-slim
           workingDir: /app
           command: ["npm", "ci", "--no-audit", "--no-fund"]
           env:
@@ -93,7 +93,7 @@ spec:
               mountPath: /tmp
       containers:
         - name: app
-          image: node:24.22.2-slim
+          image: node:26.13.1-slim
           workingDir: /app
           command: ["node", "scripts/docker-start.mjs"]
           ports:
@@ -170,7 +170,7 @@ spec:
         # Script from ConfigMap gods-eye-bridge; ws from the app's node_modules.
         # A ConfigMap change needs a pod restart to take effect.
         - name: bwais-bridge
-          image: node:24.22.2-slim
+          image: node:26.13.1-slim
           command: ["node", "/bridge/bridge.mjs"]
           env:
             - name: TZ

@@ -1,0 +1,170 @@
+# God's Eye View: upstream has no image and no production mode. The Vite dev
+# server serves the client and all API proxies. Source is cloned at a pinned
+# commit on every pod start (bump GEV_REF by hand), deps installed by npm ci.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gods-eye
+  namespace: gods-eye
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate   # RWO cache PVC
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: gods-eye
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: gods-eye
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # Shallow fetch of exactly one commit into the empty /app.
+        # safe.directory: the emptyDir is owned by root, git runs as 1000.
+        - name: fetch
+          image: alpine/git:v2.54.1
+          command: ["sh", "-ec"]
+          args:
+            - |
+              git config --global --add safe.directory /app
+              git init -q /app
+              git -C /app fetch -q --depth 1 "$GEV_REPO" "$GEV_REF"
+              git -C /app checkout -q FETCH_HEAD
+              git -C /app log -1 --format='checked out %H'
+          env:
+            - name: GEV_REPO
+              value: https://github.com/bilawalsidhu/gods-eye-view.git
+            - name: GEV_REF
+              value: 2ae043baeec0eb590aaa5e86bae1ad57055f4f9b
+            - name: HOME
+              value: /tmp
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          volumeMounts:
+            - name: app
+              mountPath: /app
+            - name: tmp
+              mountPath: /tmp
+        # Same steps as the upstream Dockerfile: npm ci, no Chromium download.
+        - name: deps
+          image: node:24.22.2-slim
+          workingDir: /app
+          command: ["npm", "ci", "--no-audit", "--no-fund"]
+          env:
+            - name: PUPPETEER_SKIP_DOWNLOAD
+              value: "1"
+            - name: HOME
+              value: /tmp
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          volumeMounts:
+            - name: app
+              mountPath: /app
+            - name: tmp
+              mountPath: /tmp
+      containers:
+        - name: app
+          image: node:24.22.2-slim
+          workingDir: /app
+          command: ["node", "scripts/docker-start.mjs"]
+          ports:
+            - name: http
+              containerPort: 4173
+          env:
+            - name: TZ
+              value: Europe/Oslo
+            - name: HOST
+              value: 0.0.0.0
+            - name: PORT
+              value: "4173"
+            # IP Host headers (kubelet probes) are always accepted upstream.
+            - name: GEV_ALLOWED_HOSTS
+              value: godseye.local.net
+            # Provider Settings (writes .env) stays loopback-only.
+            - name: GEV_KEY_SETUP_TRUSTED_PEERS
+              value: none
+            - name: OPENSKY_AUTH_MODE
+              value: oauth
+            - name: PUPPETEER_SKIP_DOWNLOAD
+              value: "1"
+            - name: HOME
+              value: /tmp
+          envFrom:
+            - secretRef:
+                name: gods-eye-env
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 250m
+              memory: 1Gi
+            limits:
+              cpu: "2"
+              memory: 3Gi
+          # Vite optimises dependencies on first run; allow up to 10 minutes.
+          startupProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 10
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          volumeMounts:
+            - name: app
+              mountPath: /app
+            - name: tmp
+              mountPath: /tmp
+            - name: cache
+              mountPath: /app/.gev-cache
+      volumes:
+        - name: app
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+        - name: cache
+          persistentVolumeClaim:
+            claimName: gods-eye-cache

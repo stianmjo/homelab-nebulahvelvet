@@ -20,4 +20,5 @@ resources:
 #  - monitoring
 #  - splunk
   - hadelandraas
+  - gods-eye
   - default

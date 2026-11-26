@@ -118,6 +118,12 @@ spec:
               value: "1"
             - name: HOME
               value: /tmp
+            # AIS comes from the bwais-bridge sidecar (BarentsWatch), not AISStream.
+            # The key is a dummy: any value enables the vessel layer.
+            - name: AISSTREAM_URL
+              value: ws://127.0.0.1:8765
+            - name: AISSTREAM_API_KEY
+              value: barentswatch-bridge
           envFrom:
             - secretRef:
                 name: gods-eye-env
@@ -160,6 +166,52 @@ spec:
               mountPath: /tmp
             - name: cache
               mountPath: /app/.gev-cache
+        # BarentsWatch Live AIS -> AISStream websocket on 127.0.0.1:8765 (pod-local).
+        # Script from ConfigMap gods-eye-bridge; ws from the app's node_modules.
+        # A ConfigMap change needs a pod restart to take effect.
+        - name: bwais-bridge
+          image: node:24.22.2-slim
+          command: ["node", "/bridge/bridge.mjs"]
+          env:
+            - name: TZ
+              value: Europe/Oslo
+            - name: NODE_PATH
+              value: /app/node_modules
+            - name: HOME
+              value: /tmp
+          envFrom:
+            - secretRef:
+                name: gods-eye-barentswatch
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          # Listens on 127.0.0.1 only, so a kubelet tcpSocket probe (pod IP) cannot reach it.
+          readinessProbe:
+            exec:
+              command:
+                - node
+                - -e
+                - "require('net').connect(8765,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"
+            periodSeconds: 30
+            timeoutSeconds: 5
+          volumeMounts:
+            - name: app
+              mountPath: /app
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+            - name: bridge
+              mountPath: /bridge
+              readOnly: true
       volumes:
         - name: app
           emptyDir: {}
@@ -168,3 +220,6 @@ spec:
         - name: cache
           persistentVolumeClaim:
             claimName: gods-eye-cache
+        - name: bridge
+          configMap:
+            name: gods-eye-bridge

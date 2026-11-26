@@ -1,0 +1,223 @@
+# BarentsWatch Live AIS -> AISStream bridge, run by the bwais-bridge container
+# (node /bridge/bridge.mjs). See the header comment in the script.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gods-eye-bridge
+  namespace: gods-eye
+data:
+  bridge.mjs: |
+    // BarentsWatch Live AIS -> AISStream bridge for God's Eye View.
+    //
+    // The app's AIS client (server/providers/vessels/ais-live.js) connects to
+    // AISSTREAM_URL, sends one subscription frame and then expects one AISStream
+    // JSON envelope per websocket message. This bridge accepts that connection,
+    // ignores the subscription (APIKey, BoundingBoxes: BarentsWatch only covers
+    // Norwegian waters anyway) and feeds envelopes built from BarentsWatch records.
+    //
+    // One upstream stream is shared by all clients and runs only while a client is
+    // connected. Env: BARENTSWATCH_CLIENT_ID, BARENTSWATCH_CLIENT_SECRET,
+    // BRIDGE_HOST (127.0.0.1), BRIDGE_PORT (8765).
+    import { createRequire } from 'node:module';
+
+    // `ws` comes from the app's node_modules. ESM `import` ignores NODE_PATH,
+    // require() honours it, so load ws through require.
+    const { WebSocketServer } = createRequire(import.meta.url)('ws');
+
+    const TOKEN_URL = 'https://id.barentswatch.no/connect/token';
+    const API = 'https://live.ais.barentswatch.no/v1';
+    const QUERY = 'modelType=Full&modelFormat=Json'; // flat objects, static fields included
+    const HOST = process.env.BRIDGE_HOST || '127.0.0.1';
+    const PORT = Number(process.env.BRIDGE_PORT) || 8765;
+    const SNAPSHOT_WINDOW_MS = 30 * 60_000; // the app expires rows after 30 min
+    const IDLE_MS = 120_000; // no bytes for this long: drop and reconnect the stream
+    const BACKOFF_MS = [5_000, 15_000, 60_000, 300_000];
+    const AUTH_RETRY_MS = 15 * 60_000;
+    const AID_MMSI = /^99\d{7}$/; // same aid rule as the app (src/data/vesselTypes.js)
+    const { BARENTSWATCH_CLIENT_ID: CLIENT_ID, BARENTSWATCH_CLIENT_SECRET: CLIENT_SECRET } = process.env;
+
+    const log = (msg) => console.log(`${new Date().toISOString()} [bwais] ${msg}`);
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    // Bad credentials. The message must read as an auth failure to the app
+    // (AUTH_TEXT in src/data/aisStreamAdapter.js), so it backs off instead of hammering.
+    class AuthError extends Error {}
+
+    if (!CLIENT_ID || !CLIENT_SECRET) {
+      log('BARENTSWATCH_CLIENT_ID / BARENTSWATCH_CLIENT_SECRET not set');
+      process.exit(1);
+    }
+
+    // --- BarentsWatch token (client credentials, cached until 5 min before expiry) ---
+    let token = null;
+    async function getToken() {
+      if (token && Date.now() < token.expiresAt - 5 * 60_000) return token.value;
+      const res = await fetch(TOKEN_URL, {
+        method: 'POST',
+        body: new URLSearchParams({
+          grant_type: 'client_credentials',
+          client_id: CLIENT_ID,
+          client_secret: CLIENT_SECRET,
+          scope: 'ais',
+        }),
+      });
+      if (res.status === 400 || res.status === 401)
+        throw new AuthError(`BarentsWatch token request unauthorized (HTTP ${res.status})`);
+      if (!res.ok) throw new Error(`token request failed (HTTP ${res.status})`);
+      const body = await res.json();
+      token = { value: body.access_token, expiresAt: Date.now() + body.expires_in * 1000 };
+      log(`token refreshed, expires in ${body.expires_in} s`);
+      return token.value;
+    }
+
+    async function api(path, signal) {
+      const res = await fetch(`${API}${path}`, {
+        headers: { Authorization: `Bearer ${await getToken()}` },
+        signal,
+      });
+      if (res.status === 401 || res.status === 403) token = null; // fresh token next try
+      if (!res.ok) throw new Error(`${path.split('?')[0]} failed (HTTP ${res.status})`);
+      return res;
+    }
+
+    // --- BarentsWatch record -> AISStream envelopes (fields ais-store.js reads) ---
+    function toEnvelopes(r) {
+      if (!Number.isInteger(r?.mmsi)) return [];
+      const MetaData = {
+        MMSI: r.mmsi,
+        ShipName: r.name ?? '',
+        latitude: r.latitude,
+        longitude: r.longitude,
+        time_utc: r.msgtime,
+      };
+      const hasPosition = Number.isFinite(r.latitude) && Number.isFinite(r.longitude);
+      const pos = { UserID: r.mmsi, Latitude: r.latitude, Longitude: r.longitude };
+
+      // Buoys, beacons, virtual marks. BarentsWatch gives no aid kind, only a name.
+      if (AID_MMSI.test(String(r.mmsi))) {
+        if (!hasPosition) return [];
+        const aid = { ...pos, Name: r.name ?? '' };
+        return [{ MessageType: 'AidsToNavigationReport', MetaData, Message: { AidsToNavigationReport: aid } }];
+      }
+
+      const out = [];
+      // Position first: a static report for an untracked vessel would otherwise
+      // create the row without speed/course.
+      if (hasPosition) {
+        const report = {
+          ...pos,
+          Sog: r.speedOverGround,
+          Cog: r.courseOverGround,
+          TrueHeading: r.trueHeading,
+          NavigationalStatus: r.navigationalStatus,
+        };
+        out.push({ MessageType: 'PositionReport', MetaData, Message: { PositionReport: report } });
+      }
+      if (r.shipType || r.destination || r.imoNumber || r.dimensionA || r.dimensionC) {
+        const statics = {
+          UserID: r.mmsi,
+          Name: r.name ?? '',
+          Type: r.shipType ?? 0,
+          Destination: r.destination ?? '',
+          ImoNumber: r.imoNumber ?? 0,
+          Dimension: { A: r.dimensionA ?? 0, B: r.dimensionB ?? 0, C: r.dimensionC ?? 0, D: r.dimensionD ?? 0 },
+        };
+        out.push({ MessageType: 'ShipStaticData', MetaData, Message: { ShipStaticData: statics } });
+      }
+      return out;
+    }
+
+    // --- clients ---
+    const clients = new Set();
+    const sendTo = (ws, record) => {
+      for (const env of toEnvelopes(record)) if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(env));
+    };
+    const sendError = (message) => {
+      for (const ws of clients) if (ws.readyState === ws.OPEN) ws.send(JSON.stringify({ error: message }));
+    };
+
+    // Latest record per vessel from the last 30 min, to one new client.
+    async function sendSnapshot(ws) {
+      const since = new Date(Date.now() - SNAPSHOT_WINDOW_MS).toISOString();
+      const records = await (await api(`/latest/combined?${QUERY}&since=${encodeURIComponent(since)}`)).json();
+      for (const r of records) sendTo(ws, r);
+      log(`snapshot sent: ${records.length} records`);
+    }
+
+    // --- shared upstream stream: newline-delimited JSON, one record per line ---
+    let running = false;
+    let stream = null; // AbortController of the current request
+    async function runStream() {
+      running = true;
+      let attempt = 0;
+      while (clients.size > 0) {
+        stream = new AbortController();
+        let idle;
+        const resetIdle = () => {
+          clearTimeout(idle);
+          idle = setTimeout(() => stream.abort('idle'), IDLE_MS);
+        };
+        try {
+          const res = await api(`/combined?${QUERY}`, stream.signal);
+          log('stream connected');
+          resetIdle();
+          const decoder = new TextDecoder();
+          let buf = '';
+          for await (const chunk of res.body) {
+            resetIdle();
+            attempt = 0; // data flows again
+            buf += decoder.decode(chunk, { stream: true });
+            let nl;
+            while ((nl = buf.indexOf('\n')) >= 0) {
+              const line = buf.slice(0, nl).trim();
+              buf = buf.slice(nl + 1);
+              if (!line) continue;
+              let record;
+              try { record = JSON.parse(line); } catch { continue; } // skip a malformed line
+              for (const ws of clients) sendTo(ws, record);
+            }
+          }
+          log('stream closed by server');
+        } catch (err) {
+          if (stream.signal.reason === 'no-clients') continue; // loop re-checks clients
+          if (err instanceof AuthError) {
+            log(`auth failed: ${err.message}; retry in ${AUTH_RETRY_MS / 60_000} min`);
+            sendError(err.message);
+            await sleep(AUTH_RETRY_MS);
+            continue;
+          }
+          log(`stream error: ${stream.signal.reason === 'idle' ? `no data for ${IDLE_MS / 1000} s` : err.message}`);
+        } finally {
+          clearTimeout(idle);
+        }
+        if (clients.size === 0) break;
+        const delay = BACKOFF_MS[Math.min(attempt++, BACKOFF_MS.length - 1)];
+        log(`reconnect in ${delay / 1000} s`);
+        await sleep(delay);
+      }
+      running = false;
+      log('stream stopped (no clients)');
+    }
+
+    // --- AISStream stand-in ---
+    const wss = new WebSocketServer({ host: HOST, port: PORT });
+    wss.on('listening', () => log(`listening on ws://${HOST}:${PORT}`));
+    wss.on('connection', (ws) => {
+      // The first frame is the AISStream subscription; its content is ignored.
+      ws.once('message', () => {
+        clients.add(ws);
+        log(`client connected (${clients.size} total)`);
+        if (!running) runStream();
+        sendSnapshot(ws).catch((err) => {
+          log(`snapshot failed: ${err.message}`);
+          if (err instanceof AuthError && ws.readyState === ws.OPEN) ws.send(JSON.stringify({ error: err.message }));
+        });
+      });
+      ws.on('close', () => {
+        if (!clients.delete(ws)) return;
+        log(`client disconnected (${clients.size} left)`);
+        if (clients.size === 0) stream?.abort('no-clients');
+      });
+    });
+
+    for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => process.exit(0));

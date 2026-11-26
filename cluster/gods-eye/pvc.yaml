@@ -1,0 +1,13 @@
+# Provider disk caches (/app/.gev-cache). Disposable, so Delete reclaim.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gods-eye-cache
+  namespace: gods-eye
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 2Gi

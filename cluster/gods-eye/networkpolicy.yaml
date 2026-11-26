@@ -1,0 +1,45 @@
+# Ingress: traefik-internal only, on the app port. Egress stays open (git, npm,
+# OpenSky, FIRMS, Cesium, map tiles, BarentsWatch).
+# kubelet probes are root-owned node traffic and always allowed by kube-network-policies.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: gods-eye
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-same-namespace
+  namespace: gods-eye
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-from-traefik-internal
+  namespace: gods-eye
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: gods-eye
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: traefik-internal
+      ports:
+        - protocol: TCP
+          port: 4173
